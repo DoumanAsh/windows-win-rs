@@ -1,0 +1,14 @@
+[package]
+name = "windows-win"
+version = "0.1.0"
+authors = ["Douman <douman@gmx.se>"]
+description = "Library to interact with windows in Windows."
+license = "MIT"
+keywords = ["Windows", "winapi"]
+
+[dependencies]
+winapi = "^0.2.5"
+user32-sys = "^0.1.2"
+kernel32-sys = "^0.2.1"
+windows-error = "1.0.0"
+
