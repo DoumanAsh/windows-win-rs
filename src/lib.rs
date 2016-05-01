@@ -1,6 +1,6 @@
 //! Windows WinAPI
 //!
-//! This crate provide simple means to interact with windows.
+//! Some windows hacking library with utilities to find windows and access them.
 //!
 
 extern crate winapi;
@@ -15,6 +15,7 @@ use winapi::windef::{
     HWND
 };
 use winapi::minwindef::LPARAM;
+use winapi::winnt::HANDLE;
 
 //WinAPI constants
 use winapi::winuser::{
@@ -73,8 +74,8 @@ pub fn is_window_visible(window: HWND) -> bool {
 ///
 ///# Return:
 ///
-///* ```String``` - Contains name of class.
-///* ```WindowsError``` - Error reason.
+///* ```Ok``` - Contains name of class.
+///* ```Err``` - Error reason.
 pub fn get_window_class(window: HWND) -> Result<String, WindowsError> {
     const BUF_SIZE: usize = 512;
     let mut buff: [u16; BUF_SIZE] = [0; BUF_SIZE];
@@ -98,8 +99,8 @@ pub fn get_window_class(window: HWND) -> Result<String, WindowsError> {
 ///
 ///# Return:
 ///
-///* ```String``` - Contains name of class.
-///* ```WindowsError``` - Error reason.
+///* ```Ok``` - Contains name of class.
+///* ```Err``` - Error reason.
 pub fn get_window_text(window: HWND) -> Result<String, WindowsError> {
     const BUF_SIZE: usize = 512;
     let mut buff: [u16; BUF_SIZE] = [0; BUF_SIZE];
@@ -139,8 +140,8 @@ unsafe extern "system" fn window_filter_by_class(window: HWND, param: LPARAM) ->
 ///
 ///# Return:
 ///
-///* ```Vec<HWND>``` - Vector of handles.
-///* ```WindowsError``` - Error reason.
+///* ```Ok``` - Vector of handles.
+///* ```Err``` - Error reason.
 pub fn get_windows_by_class(class_name: &str, parent: Option<HWND>) -> Result<Vec<HWND>, WindowsError> {
     let found_windows: Vec<HWND> = vec![];
     let mut param = (class_name, found_windows);
@@ -186,8 +187,8 @@ unsafe extern "system" fn window_filter_by_name(window: HWND, param: LPARAM) -> 
 ///
 ///# Return:
 ///
-///* ```Vec<HWND>``` - Vector of handles.
-///* ```WindowsError``` - Error reason.
+///* ```Ok``` - Vector of handles.
+///* ```Err``` - Error reason.
 pub fn get_windows_by_title(name: &str, parent: Option<HWND>) -> Result<Vec<HWND>, WindowsError> {
     let found_windows: Vec<HWND> = vec![];
     let mut param = (name, found_windows);
@@ -207,4 +208,118 @@ pub fn get_windows_by_title(name: &str, parent: Option<HWND>) -> Result<Vec<HWND
     }
 
     Ok(param.1)
+}
+
+///Retrieves the identifier of the thread and process that created the specified window.
+///
+///# Parameters:
+///
+///* ```window``` - Handle to a window.
+///
+///# Return(tuple):
+///
+///1. Process pid
+///2. Thread id.
+pub fn get_windows_thread_process_id(window: HWND) -> (u32, u32) {
+    let mut process_pid: u32 = 0;
+    let thread_pid = unsafe {GetWindowThreadProcessId(window, &mut process_pid)};
+
+    (process_pid, thread_pid)
+}
+
+///Opens process by pid.
+///
+///# Note:
+///See information about access rights:
+///https://msdn.microsoft.com/en-us/library/windows/desktop/ms684880%28v=vs.85%29.aspx
+///
+///# Parameters:
+///
+///* ```pid``` - Pid of the process.
+///* ```access_rights``` - Bit mask that specifies desired access rights.
+///
+///# Return:
+///
+///* ```Ok``` - Handle to opened process.
+///* ```Err``` - Error reason.
+pub fn open_process(pid: u32, access_rights: u32) -> Result<HANDLE, WindowsError> {
+    let result = unsafe {OpenProcess(access_rights, 0, pid) };
+
+    if result.is_null() {
+        return Err(WindowsError::from_last_err());
+    }
+
+    Ok(result)
+}
+
+///Closes opened process.
+///
+///# Parameters:
+///
+///* ```process``` - pointer to a opened process.
+///
+///# Return:
+///
+///* ```Ok``` - Success.
+///* ```Err``` - Error reason.
+pub fn close_process(process: HANDLE) -> Result<(), WindowsError> {
+    let result = unsafe {CloseHandle(process) };
+
+    if result == 0 {
+        return Err(WindowsError::from_last_err());
+    }
+
+    Ok(())
+}
+
+///Reads process memory.
+///
+///# Parameters:
+///
+///* ```process``` - Pointer to a opened process.
+///* ```base_addr``` - Address from where to start reading.
+///* ```read_size``` - Length of data to read.
+///
+///# Return:
+///
+///* ```Ok``` - Vector with data.
+///* ```Err``` - Error reason.
+pub fn read_process_memory(process: HANDLE, base_addr: u32, read_size: usize) -> Result<Vec<i8>, WindowsError> {
+    let mut result = vec![0 as i8; read_size];
+    let ret_val = unsafe {ReadProcessMemory(process,
+                                            base_addr as *const winapi::c_void,
+                                            result.as_mut_ptr() as *mut winapi::c_void,
+                                            read_size as u64,
+                                            std::ptr::null_mut())};
+
+    if ret_val == 0 {
+        return Err(WindowsError::from_last_err());
+    }
+
+    Ok(result)
+}
+
+///Writes into process memory.
+///
+///# Parameters:
+///
+///* ```process``` - Pointer to a opened process.
+///* ```base_addr``` - Address from where to start writing.
+///* ```data``` - Slice with write data.
+///
+///# Return:
+///
+///* ```Ok``` - Success.
+///* ```Err``` - Error reason.
+pub fn write_process_memory(process: HANDLE, base_addr: u32, data: &[i8]) -> Result<(), WindowsError> {
+    let ret_val = unsafe {WriteProcessMemory(process,
+                                             base_addr as *mut winapi::c_void,
+                                             data.as_ptr() as *const winapi::c_void,
+                                             data.len() as u64,
+                                             std::ptr::null_mut())};
+    if ret_val == 0 {
+        return Err(WindowsError::from_last_err());
+    }
+
+    Ok(())
 }

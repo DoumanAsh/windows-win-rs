@@ -1,8 +1,8 @@
 [package]
 name = "windows-win"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Douman <douman@gmx.se>"]
-description = "Library to interact with windows in Windows."
+description = "Some windows hacking library with utilities to find windows and access them"
 repository = "https://github.com/DoumanAsh/windows-win-rs"
 documentation = "http://doumanash.github.io/windows-win-rs/doc/windows_win/index.html"
 license = "MIT"
