@@ -3,6 +3,8 @@ name = "windows-win"
 version = "0.1.0"
 authors = ["Douman <douman@gmx.se>"]
 description = "Library to interact with windows in Windows."
+repository = "https://github.com/DoumanAsh/windows-win-rs"
+documentation = "http://doumanash.github.io/windows-win-rs/doc/windows_win/index.html"
 license = "MIT"
 keywords = ["Windows", "winapi"]
 
