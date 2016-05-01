@@ -323,3 +323,82 @@ pub fn write_process_memory(process: HANDLE, base_addr: u32, data: &[u8]) -> Res
 
     Ok(())
 }
+
+use std::os::windows::ffi::OsStrExt;
+///Search for a window's handle.
+///
+///# Parameters:
+///
+///* ```class_name``` - Name of window's class.
+///* ```window_name``` - Window's title.
+///
+///# Return:
+///
+///* ```Ok``` - Handle to window.
+///* ```Err``` - Error reason.
+pub fn find_window<T: AsRef<std::ffi::OsStr>>(class_name: T, window_name: Option<T>) -> Result<HWND, WindowsError> {
+    let result: HWND;
+    let mut class_name: Vec<u16> = class_name.as_ref().encode_wide().collect();
+    class_name.push(0);
+    let class_name = class_name.as_ptr() as *const u16;
+
+    if let Some(window_name) = window_name {
+        let mut window_name: Vec<u16> = window_name.as_ref().encode_wide().collect();
+        window_name.push(0);
+        let window_name = window_name.as_ptr() as *const u16;
+
+        result = unsafe {FindWindowW(class_name, window_name)};
+    }
+    else {
+        result = unsafe {FindWindowW(class_name, std::ptr::null())};
+    }
+
+    if result.is_null() {
+        return Err(WindowsError::from_last_err());
+    }
+
+    Ok(result)
+}
+
+///Search for a window's child.
+///
+///# Parameters:
+///
+///* ```class_name``` - Name of window's class.
+///* ```window_name``` - Window's title.
+///* ```parent``` - Handle to a parent window. Default is desktop.
+///* ```child_after``` - Handle to a child window after which to start search.
+///
+///# Return:
+///
+///* ```Ok``` - Handle to window.
+///* ```Err``` - Error reason.
+pub fn find_child_window<T: AsRef<std::ffi::OsStr>>(class_name: T,
+                                                    window_name: Option<T>,
+                                                    parent: Option<HWND>,
+                                                    child_after: Option<HWND>) -> Result<HWND, WindowsError> {
+    let result: HWND;
+    let mut class_name: Vec<u16> = class_name.as_ref().encode_wide().collect();
+    class_name.push(0);
+    let class_name = class_name.as_ptr() as *const u16;
+
+    let parent = parent.unwrap_or(0x0 as HWND);
+    let child_after = child_after.unwrap_or(0x0 as HWND);
+
+    if let Some(window_name) = window_name {
+        let mut window_name: Vec<u16> = window_name.as_ref().encode_wide().collect();
+        window_name.push(0);
+        let window_name = window_name.as_ptr() as *const u16;
+
+        result = unsafe {FindWindowExW(parent, child_after, class_name, window_name)};
+    }
+    else {
+        result = unsafe {FindWindowExW(parent, child_after, class_name, std::ptr::null())};
+    }
+
+    if result.is_null() {
+        return Err(WindowsError::from_last_err());
+    }
+
+    Ok(result)
+}
