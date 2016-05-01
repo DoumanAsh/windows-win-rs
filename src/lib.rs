@@ -284,8 +284,8 @@ pub fn close_process(process: HANDLE) -> Result<(), WindowsError> {
 ///
 ///* ```Ok``` - Vector with data.
 ///* ```Err``` - Error reason.
-pub fn read_process_memory(process: HANDLE, base_addr: u32, read_size: usize) -> Result<Vec<i8>, WindowsError> {
-    let mut result = vec![0 as i8; read_size];
+pub fn read_process_memory(process: HANDLE, base_addr: u32, read_size: usize) -> Result<Vec<u8>, WindowsError> {
+    let mut result = vec![0 as u8; read_size];
     let ret_val = unsafe {ReadProcessMemory(process,
                                             base_addr as *const winapi::c_void,
                                             result.as_mut_ptr() as *mut winapi::c_void,
@@ -311,7 +311,7 @@ pub fn read_process_memory(process: HANDLE, base_addr: u32, read_size: usize) ->
 ///
 ///* ```Ok``` - Success.
 ///* ```Err``` - Error reason.
-pub fn write_process_memory(process: HANDLE, base_addr: u32, data: &[i8]) -> Result<(), WindowsError> {
+pub fn write_process_memory(process: HANDLE, base_addr: u32, data: &[u8]) -> Result<(), WindowsError> {
     let ret_val = unsafe {WriteProcessMemory(process,
                                              base_addr as *mut winapi::c_void,
                                              data.as_ptr() as *const winapi::c_void,
