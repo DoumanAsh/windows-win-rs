@@ -1,0 +1,28 @@
+branches:
+  only:
+    - master
+  except:
+    - gh-pages
+
+environment:
+  matrix:
+  - TARGET: i686-pc-windows-gnu
+  - TARGET: x86_64-pc-windows-gnu
+  api:
+    secure: ZQiyxjBbshVpIVZbZl9h23yGuqlq+8j615c0B2z7VxdEAW1wggIfkebJqpgZclk2
+  git_token:
+    secure: H5PQSeh6rHOoDLktlYlVLYu/iJMTwzzNVk8Wr//nqbYC7xrJuGDwKwiev/0Bl2d3
+
+install:
+  - ps: Start-FileDownload "https://static.rust-lang.org/dist/rust-beta-${env:TARGET}.exe"
+  - rust-beta-%TARGET%.exe /VERYSILENT /NORESTART /DIR="C:\Rust"
+  - ps: Remove-Item "rust-beta-$env:TARGET.exe"
+  - ps: $env:PATH="$env:PATH;C:\Rust\bin"
+
+build: false
+
+test_script:
+  - cargo test
+
+on_success:
+  - powershell -version 3 -File build.ps1 bot
