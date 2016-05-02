@@ -294,7 +294,7 @@ pub fn read_process_memory(process: HANDLE, base_addr: u32, read_size: usize) ->
     let ret_val = unsafe {ReadProcessMemory(process,
                                             base_addr as *const winapi::c_void,
                                             result.as_mut_ptr() as *mut winapi::c_void,
-                                            read_size as u64,
+                                            read_size as winapi::basetsd::SIZE_T,
                                             std::ptr::null_mut())};
 
     if ret_val == 0 {
@@ -320,7 +320,7 @@ pub fn write_process_memory(process: HANDLE, base_addr: u32, data: &[u8]) -> Res
     let ret_val = unsafe {WriteProcessMemory(process,
                                              base_addr as *mut winapi::c_void,
                                              data.as_ptr() as *const winapi::c_void,
-                                             data.len() as u64,
+                                             data.len() as winapi::basetsd::SIZE_T,
                                              std::ptr::null_mut())};
     if ret_val == 0 {
         return Err(WindowsError::from_last_err());
