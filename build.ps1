@@ -17,8 +17,6 @@ Set-Location $PSScriptRoot
 switch ($args[0])
 {
     "test" {
-        echo "let's save some clipboard!" | Clip
-        $env:RUST_TEST_THREADS=1
         cargo test
     }
     "build" {
@@ -68,7 +66,7 @@ switch ($args[0])
         echo ""
         echo "Build is done"
 
-        $crates_io_ver=cargo search clipboard-win
+        $crates_io_ver=cargo search windows-win
         $crates_io_ver = $crates_io_ver -match "\d{1,3}.\d{1,3}.\d{1,3}"
         $crates_io_ver = $crates_io_ver.split()[1]
         $crates_io_ver = $crates_io_ver.substring(1, $crates_io_ver.indexof(")")-1).split('.')
