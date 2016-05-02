@@ -116,66 +116,72 @@ pub fn get_window_text(window: HWND) -> Result<String, WindowsError> {
     Ok(String::from_utf16_lossy(&buff[0..writ_chars as usize]))
 }
 
-unsafe extern "system" fn window_filter_by_class(window: HWND, param: LPARAM) -> i32 {
-    let param = &mut *(param as *mut (&str, Vec<HWND>));
+unsafe extern "system" fn callback_enum_windows<T: FnMut(HWND)>(window: HWND, param: LPARAM) -> i32 {
+    let mut func = &mut *(param as *mut T);
 
-    let class_name = param.0;
-    let mut windows_vec = &mut param.1;
-
-    if let Ok(window_class) = get_window_class(window) {
-        if window_class == class_name {
-            windows_vec.push(window);
-        }
-    }
+    func(window);
 
     1
 }
 
-///Retrieves list of handles to specific window class
+///Enumerates over windows handles and calls callback on each
 ///
 ///# Parameters:
 ///
-///* ```class_name``` - A name of class for which handle to be looked up.
 ///* ```parent``` - Handle of parent window to look up through its children only. Optional.
+///* ```cmp_func``` - Callback that will be called on each window
 ///
 ///# Return:
 ///
-///* ```Ok``` - Vector of handles.
+///* ```Ok``` - Success.
 ///* ```Err``` - Error reason.
-pub fn get_windows_by_class(class_name: &str, parent: Option<HWND>) -> Result<Vec<HWND>, WindowsError> {
-    let found_windows: Vec<HWND> = vec![];
-    let mut param = (class_name, found_windows);
-    let lparam = &mut param as *mut _ as LPARAM;
+pub fn enum_windows_by<T: FnMut(HWND)>(parent: Option<HWND>, mut cmp_func: T) -> Result<(), WindowsError> {
+    let lparam = &mut cmp_func as *mut _ as LPARAM;
 
     let result: i32;
 
     if let Some(parent_window) = parent {
-        result = unsafe { EnumChildWindows(parent_window, Some(window_filter_by_class), lparam) };
+        result = unsafe { EnumChildWindows(parent_window, Some(callback_enum_windows::<T>), lparam) };
     }
     else {
-        result = unsafe { EnumWindows(Some(window_filter_by_class), lparam) };
+        result = unsafe { EnumWindows(Some(callback_enum_windows::<T>), lparam) };
     }
 
     if result == 0 {
         return Err(WindowsError::from_last_err());
     }
 
-    Ok(param.1)
+    Ok(())
 }
 
-unsafe extern "system" fn window_filter_by_name(window: HWND, param: LPARAM) -> i32 {
-    let param = &mut *(param as *mut (&str, Vec<HWND>));
+///Retrieves list of handles to specific window class
+///
+///# parameters:
+///
+///* ```class_name``` - a name of class for which handle to be looked up.
+///* ```parent``` - handle of parent window to look up through its children only. optional.
+///
+///# return:
+///
+///* ```ok``` - vector of handles.
+///* ```err``` - error reason.
+pub fn get_windows_by_class(class_name: &str, parent: Option<HWND>) -> Result<Vec<HWND>, WindowsError> {
+    let mut found_windows: Vec<HWND> = vec![];
 
-    let title_name = param.0;
-    let mut windows_vec = &mut param.1;
+    let res = enum_windows_by(parent,
+                              |handle: HWND| {
+                                  if let Ok(window_class) = get_window_class(handle) {
+                                      if window_class == class_name {
+                                          found_windows.push(handle);
+                                      }
+                                  }
+                              });
 
-    if let Ok(window_class) = get_window_text(window) {
-        if window_class == title_name {
-            windows_vec.push(window);
-        }
+    if res.is_err() {
+        res.err().unwrap();
     }
 
-    1
+    Ok(found_windows)
 }
 
 ///Retrieves list of handles to windows with specific title's text.
@@ -190,25 +196,24 @@ unsafe extern "system" fn window_filter_by_name(window: HWND, param: LPARAM) -> 
 ///* ```Ok``` - Vector of handles.
 ///* ```Err``` - Error reason.
 pub fn get_windows_by_title(name: &str, parent: Option<HWND>) -> Result<Vec<HWND>, WindowsError> {
-    let found_windows: Vec<HWND> = vec![];
-    let mut param = (name, found_windows);
-    let lparam = &mut param as *mut _ as LPARAM;
+    let mut found_windows: Vec<HWND> = vec![];
 
-    let result: i32;
+    let res = enum_windows_by(parent,
+                              |handle: HWND| {
+                                  if let Ok(window_title) = get_window_text(handle) {
+                                      if window_title == name {
+                                          found_windows.push(handle);
+                                      }
+                                  }
+                              });
 
-    if let Some(parent_window) = parent {
-        result = unsafe { EnumChildWindows(parent_window, Some(window_filter_by_name), lparam) };
-    }
-    else {
-        result = unsafe { EnumWindows(Some(window_filter_by_name), lparam) };
-    }
-
-    if result == 0 {
-        return Err(WindowsError::from_last_err());
+    if res.is_err() {
+        res.err().unwrap();
     }
 
-    Ok(param.1)
+    Ok(found_windows)
 }
+
 
 ///Retrieves the identifier of the thread and process that created the specified window.
 ///
