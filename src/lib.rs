@@ -407,3 +407,81 @@ pub fn find_child_window<T: AsRef<std::ffi::OsStr>>(class_name: T,
 
     Ok(result)
 }
+
+///Windows process representation
+pub struct WinProcess {
+    inner: HANDLE,
+}
+
+impl WinProcess {
+    ///Creates new process
+    ///
+    ///# Note:
+    ///See information about access rights:
+    ///https://msdn.microsoft.com/en-us/library/windows/desktop/ms684880%28v=vs.85%29.aspx
+    ///
+    ///# Parameters:
+    ///
+    ///* ```pid``` - Pid of the process.
+    ///* ```access_rights``` - Bit mask that specifies desired access rights.
+    ///
+    ///# Return:
+    ///
+    ///* ```Ok``` - Process struct.
+    ///* ```Err``` - Error reason.
+    pub fn open(pid: u32, access_rights: u32) -> Result<WinProcess, WindowsError> {
+        match open_process(pid, access_rights) {
+            Ok(handle) => Ok(WinProcess {
+                inner: handle,
+            }),
+            Err(error) => Err(error),
+        }
+    }
+
+    #[inline]
+    ///Reads memory from process.
+    ///
+    ///# Parameters:
+    ///
+    ///* ```base_addr``` - Address from where to start reading.
+    ///* ```read_size``` - Length to read.
+    pub fn read_memory(&self, base_addr: u32, read_size: usize) -> Result<Vec<u8>, WindowsError> {
+        read_process_memory(self.inner, base_addr, read_size)
+    }
+
+    #[inline]
+    ///Writes into process memory.
+    ///
+    ///# Parameters:
+    ///
+    ///* ```base_addr``` - Address from where to start writing.
+    ///* ```data``` - Slice with write data.
+    ///
+    ///# Return:
+    ///
+    ///* ```Ok``` - Success.
+    ///* ```Err``` - Error reason.
+    pub fn write_memory(&self, base_addr: u32, data: &[u8]) -> Result<(), WindowsError> {
+        write_process_memory(self.inner, base_addr, data)
+    }
+
+    ///Closes process
+    ///
+    ///# Note:
+    ///
+    ///There is no need to explicitly close the process.
+    ///
+    ///It shall be closed automatically when being dropped.
+    pub fn close(&mut self) {
+        if !self.inner.is_null() {
+            close_process(self.inner).expect("Unable to close process");
+            self.inner = std::ptr::null_mut();
+        }
+    }
+}
+
+impl Drop for WinProcess {
+    fn drop(&mut self) {
+        self.close()
+    }
+}
