@@ -11,12 +11,13 @@ use windows_win::{
     get_window_text,
     open_process,
     close_process,
+    get_process_exe_path,
 };
 
 fn start_prog(name: &str) -> std::process::Child {
     let res = std::process::Command::new(name).spawn().unwrap();
     //Give a bit of time for window to appear
-    sleep(50);
+    sleep(100);
 
     res
 }
@@ -38,12 +39,28 @@ fn test_interact_notepad() {
     let mut notepad = start_prog("notepad");
 
     test_open_close(notepad.id());
+    test_query_process_exe(notepad.id());
     test_get_windows_by_title(notepad.id());
     test_window_set_text_message(notepad.id());
     //This test should be last as it closes notepad
     test_window_sys_command_close(notepad.id());
 
     notepad.wait().expect("Failed to wait of closing");
+}
+
+fn test_query_process_exe(notepad_id: u32) {
+    let result = open_process(notepad_id, 0x0400);
+    assert!(result.is_ok());
+    let notepad = result.unwrap();
+
+    let result = get_process_exe_path(notepad);
+    assert!(result.is_ok());
+    let result = result.unwrap();
+    assert!(result.starts_with("C:\\Windows\\"));
+    assert!(result.ends_with("\\notepad.exe"));
+
+    let result = close_process(notepad);
+    assert!(result.is_ok());
 }
 
 fn test_open_close(notepad_id: u32) {

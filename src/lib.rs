@@ -51,7 +51,8 @@ use kernel32::{
     OpenProcess,
     CloseHandle,
     ReadProcessMemory,
-    WriteProcessMemory
+    WriteProcessMemory,
+    QueryFullProcessImageNameW,
 };
 
 ///Determines if window is visible.
@@ -403,6 +404,34 @@ pub fn write_process_memory(process: HANDLE, base_addr: u32, data: &[u8]) -> Res
     Ok(())
 }
 
+///Gets full path to process's exectuable.
+///
+///# Note
+///
+/// The process MUST be opened with either PROCESS_QUERY_INFORMATION or PROCESS_QUERY_LIMITED_INFORMATION flag.
+///
+///# Parameters
+///
+///* ```process``` - Pointer to a opened process.
+///
+///# Return
+///
+///* ```Ok``` - Success.
+///* ```Err``` - Error reason.
+pub fn get_process_exe_path(process: HANDLE) -> Result<String, WindowsError> {
+    let mut buf_len = winapi::minwindef::MAX_PATH as u32;
+    let mut result: Vec<u16> = vec![0; buf_len as usize];
+    let text_ptr = result.as_mut_ptr() as winapi::winnt::LPWSTR;
+
+    unsafe {
+        if QueryFullProcessImageNameW(process, 0, text_ptr, &mut buf_len as *mut u32) == 0 {
+            return Err(WindowsError::from_last_err());
+        }
+    }
+
+    Ok(String::from_utf16_lossy(&result[..buf_len as usize]))
+}
+
 use std::os::windows::ffi::OsStrExt;
 ///Search for a window's handle.
 ///
@@ -603,11 +632,12 @@ pub fn send_sys_command(window: HWND, cmd_type: WPARAM, l_param: LPARAM) -> bool
 
 ///Windows process representation
 pub struct WinProcess {
+    pid: u32,
     inner: HANDLE,
 }
 
 impl WinProcess {
-    ///Creates new process
+    ///Creates handle to a new process by opening it through pid.
     ///
     ///# Note:
     ///See information about access rights:
@@ -625,10 +655,36 @@ impl WinProcess {
     pub fn open(pid: u32, access_rights: u32) -> Result<WinProcess, WindowsError> {
         match open_process(pid, access_rights) {
             Ok(handle) => Ok(WinProcess {
+                pid: pid,
                 inner: handle,
             }),
             Err(error) => Err(error),
         }
+    }
+
+    #[inline]
+    ///Gets full path to process's exectuable.
+    ///
+    ///# Note
+    ///
+    /// The process MUST be opened with either PROCESS_QUERY_INFORMATION or PROCESS_QUERY_LIMITED_INFORMATION flag.
+    ///
+    ///# Return
+    ///
+    ///* ```Ok``` - Success.
+    ///* ```Err``` - Error reason.
+    pub fn get_process_exe_path(&self) -> Result<String, WindowsError> {
+        get_process_exe_path(self.inner)
+    }
+
+    #[inline]
+    ///Retrieves handle to process's window
+    ///
+    ///# Note
+    ///
+    ///It can return ```None``` if process hasn't created window.
+    pub fn get_window(&self) -> Result<Option<HWND>, WindowsError> {
+        get_window_by_pid(self.pid)
     }
 
     #[inline]
