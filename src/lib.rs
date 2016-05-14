@@ -14,7 +14,11 @@ use windows_error::WindowsError;
 use winapi::windef::{
     HWND
 };
-use winapi::minwindef::LPARAM;
+use winapi::minwindef::{
+    LPARAM,
+    WPARAM,
+    LRESULT
+};
 use winapi::winnt::HANDLE;
 
 //WinAPI constants
@@ -25,6 +29,9 @@ use winapi::winuser::{
     WM_GETTEXTLENGTH,
     WM_SETTEXT
 };
+
+///Button click message type
+pub const BM_CLICK: winapi::minwindef::UINT = 0x00F5;
 
 //WinAPI functions
 use user32::{
@@ -406,6 +413,123 @@ pub fn find_child_window<T: AsRef<std::ffi::OsStr>>(class_name: T,
     }
 
     Ok(result)
+}
+
+///Sends message to a window.
+///
+///# Note
+///All messages that this function sends are blocking.
+///
+///You can specify timeout for how long to block.
+///
+///# Parameters
+///
+///* ```window``` - Handle to the window for which to send.
+///* ```msg_type``` - Type of message. See WinAPI docs.
+///* ```wParam``` - Additional message specific parameter.
+///* ```lParam``` - Additional message specific parameter.
+///* ```timeout``` - Optional timeout in milliseconds.
+///
+///# Return
+///
+///* ```Ok``` - Message has been sent  successfully.
+///* ```Err``` - Error reason. Relevant only to message with timeout.
+pub fn send_message(window: HWND,
+                    msg_type: winapi::minwindef::UINT,
+                    w_param: WPARAM,
+                    l_param: LPARAM,
+                    timeout: Option<winapi::minwindef::UINT>) -> Result<LRESULT, WindowsError> {
+    if let Some(timeout) = timeout {
+        unsafe {
+            let mut result: u64 = 0;
+            let result_ptr = &mut result as winapi::basetsd::PDWORD_PTR;
+            if SendMessageTimeoutW(window, msg_type, w_param, l_param, SMTO_BLOCK, timeout, result_ptr) == 0 {
+                return Err(WindowsError::from_last_err());
+            }
+            Ok(result as LRESULT)
+        }
+    }
+    else {
+        unsafe {
+            Ok(SendMessageW(window, msg_type, w_param, l_param))
+        }
+    }
+}
+
+///Sends push button message to a window.
+///
+///# Parameters
+///
+///* ```window``` - Handle to the window for which to send.
+///* ```timeout``` - Optional timeout in milliseconds.
+pub fn send_push_button(window: HWND, timeout: Option<winapi::minwindef::UINT>) -> Result<LRESULT, WindowsError> {
+    send_message(window, BM_CLICK, 0, 0, timeout)
+}
+
+///Sends set text message to a window.
+///
+///# Parameters
+///
+///* ```window``` - Handle to the window for which to send.
+///* ```text``` - Text with which to update window.
+///
+///# Return
+///
+///* ```true``` - On success.
+///* ```false``` - Otherwise.
+pub fn send_set_text<T: AsRef<std::ffi::OsStr>>(window: HWND, text: T) -> bool {
+    let mut text: Vec<u16> = text.as_ref().encode_wide().collect();
+    text.push(0);
+    let text = text.as_ptr() as *const u16 as LPARAM;
+
+    let result = send_message(window, WM_SETTEXT, 0, text, None);
+    result.is_ok() && result.unwrap() != 0
+}
+
+///Sends get text message to a window
+///
+///# Parameters
+///
+///* ```window``` - Handle to the window for which to send.
+///
+///# Return
+///
+///* ```String``` - Window's text.
+///* ```None``` - If there is no text.
+pub fn send_get_text(window: HWND) -> Option<String> {
+    //Does not include null char
+    let buf_len = send_message(window, WM_GETTEXTLENGTH, 0, 0, None).unwrap();
+
+    if buf_len == 0 {
+        return None
+    }
+
+    let buf_len = buf_len + 1;
+
+    let text: Vec<u16> = vec![0; buf_len as usize];
+    let text_ptr = text.as_ptr() as *const u16 as LPARAM;
+    send_message(window, WM_GETTEXT, buf_len as WPARAM, text_ptr, None).unwrap();
+
+    Some(String::from_utf16_lossy(&text))
+}
+
+///Sends sys command to a window.
+///
+///Refer to https://msdn.microsoft.com/en-us/library/windows/desktop/ms646360%28v=vs.85%29.aspx
+///
+///# Parameters
+///
+///* ```window``` - Handle to the window for which to send.
+///* ```cmd_type``` - Type of sys command.
+///* ```l_param``` - Mouse & screen coordinates.
+///
+///# Return
+///
+///* ```true``` - On success.
+///* ```false``` - Otherwise.
+pub fn send_sys_command(window: HWND, cmd_type: WPARAM, l_param: LPARAM) -> bool {
+    let result = send_message(window, WM_SYSCOMMAND, cmd_type, l_param, None);
+    result.is_ok() && result.unwrap() != 0
 }
 
 ///Windows process representation
