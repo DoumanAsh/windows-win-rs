@@ -61,11 +61,11 @@ use kernel32::{
 ///
 /// When **WS_VISIBLE** is set, the window is displayed and subsequent drawing into it is displayed as long as the window has the **WS_VISIBLE** style.
 ///
-///# Parameters:
+///# Parameters
 ///
 ///* ```window``` - A handle to the window to be tested.
 ///
-///# Return:
+///# Return
 ///
 ///* ```true``` - If window is visible.
 ///* ```false``` - Otherwise.
@@ -75,11 +75,11 @@ pub fn is_window_visible(window: HWND) -> bool {
 
 ///Retrieves window's class name.
 ///
-///# Parameters:
+///# Parameters
 ///
 ///* ```window``` - A handle to the window to be tested.
 ///
-///# Return:
+///# Return
 ///
 ///* ```Ok``` - Contains name of class.
 ///* ```Err``` - Error reason.
@@ -100,11 +100,11 @@ pub fn get_window_class(window: HWND) -> Result<String, WindowsError> {
 
 ///Retrieves window's title.
 ///
-///# Parameters:
+///# Parameters
 ///
 ///* ```window``` - A handle to the window to be tested.
 ///
-///# Return:
+///# Return
 ///
 ///* ```Ok``` - Contains name of class.
 ///* ```Err``` - Error reason.
@@ -131,14 +131,20 @@ unsafe extern "system" fn callback_enum_windows<T: FnMut(HWND)>(window: HWND, pa
     1
 }
 
+unsafe extern "system" fn callback_enum_windows_until<T: FnMut(HWND) -> i32>(window: HWND, param: LPARAM) -> i32 {
+    let mut func = &mut *(param as *mut T);
+
+    func(window)
+}
+
 ///Enumerates over windows handles and calls callback on each
 ///
-///# Parameters:
+///# Parameters
 ///
 ///* ```parent``` - Handle of parent window to look up through its children only. Optional.
-///* ```cmp_func``` - Callback that will be called on each window
+///* ```cmp_func``` - Callback that will be called on each window.
 ///
-///# Return:
+///# Return
 ///
 ///* ```Ok``` - Success.
 ///* ```Err``` - Error reason.
@@ -161,14 +167,75 @@ pub fn enum_windows_by<T: FnMut(HWND)>(parent: Option<HWND>, mut cmp_func: T) ->
     Ok(())
 }
 
+///Enumerates over windows handles and calls callback on each
+///
+///# Note
+/// Enumration continues until callback return non-zero value.
+///
+///# Parameters
+///
+///* ```parent``` - Handle of parent window to look up through its children only. Optional.
+///* ```cmp_func``` - Callback that will be called on each window.
+///
+///# Return
+///
+///* ```Ok``` - Success.
+///* ```Err``` - Error reason.
+pub fn enum_windows_by_until<T: FnMut(HWND) -> i32>(parent: Option<HWND>, mut cmp_func: T) -> Result<(), WindowsError> {
+    let lparam = &mut cmp_func as *mut _ as LPARAM;
+
+    let result: i32;
+
+    if let Some(parent_window) = parent {
+        result = unsafe { EnumChildWindows(parent_window, Some(callback_enum_windows_until::<T>), lparam) };
+    }
+    else {
+        result = unsafe { EnumWindows(Some(callback_enum_windows_until::<T>), lparam) };
+    }
+
+    if result == 0 {
+        return Err(WindowsError::from_last_err());
+    }
+
+    Ok(())
+}
+///Retrieves handle to a window by pid.
+///
+///# Parameters
+///
+///* ```pid``` - Pid of the process
+///
+///# Return
+///
+///* ```Ok``` - Success.
+///* ```Err``` - Error reason.
+pub fn get_window_by_pid(pid: u32) -> Result<Option<HWND>, WindowsError> {
+    let mut found_window: Option<HWND> = None;
+
+    let res = enum_windows_by_until(None,
+                                    |handle: HWND| {
+                                        let (process_pid, _) = get_windows_thread_process_id(handle);
+                                        if process_pid == pid {
+                                            found_window = Some(handle);
+                                            return 0;
+                                        }
+                                        1
+                                    });
+    if res.is_err() {
+        res.err().unwrap();
+    }
+
+    Ok(found_window)
+}
+
 ///Retrieves list of handles to specific window class
 ///
-///# parameters:
+///# Parameters
 ///
 ///* ```class_name``` - a name of class for which handle to be looked up.
 ///* ```parent``` - handle of parent window to look up through its children only. optional.
 ///
-///# return:
+///# Return
 ///
 ///* ```ok``` - vector of handles.
 ///* ```err``` - error reason.
@@ -193,12 +260,12 @@ pub fn get_windows_by_class(class_name: &str, parent: Option<HWND>) -> Result<Ve
 
 ///Retrieves list of handles to windows with specific title's text.
 ///
-///# Parameters:
+///# Parameters
 ///
 ///* ```name``` - Window's title text.
 ///* ```parent``` - Handle of parent window to look up through its children only. Optional.
 ///
-///# Return:
+///# Return
 ///
 ///* ```Ok``` - Vector of handles.
 ///* ```Err``` - Error reason.
@@ -224,11 +291,11 @@ pub fn get_windows_by_title(name: &str, parent: Option<HWND>) -> Result<Vec<HWND
 
 ///Retrieves the identifier of the thread and process that created the specified window.
 ///
-///# Parameters:
+///# Parameters
 ///
 ///* ```window``` - Handle to a window.
 ///
-///# Return(tuple):
+///# Return(tuple)
 ///
 ///1. Process pid
 ///2. Thread id.
@@ -245,12 +312,12 @@ pub fn get_windows_thread_process_id(window: HWND) -> (u32, u32) {
 ///See information about access rights:
 ///https://msdn.microsoft.com/en-us/library/windows/desktop/ms684880%28v=vs.85%29.aspx
 ///
-///# Parameters:
+///# Parameters
 ///
 ///* ```pid``` - Pid of the process.
 ///* ```access_rights``` - Bit mask that specifies desired access rights.
 ///
-///# Return:
+///# Return
 ///
 ///* ```Ok``` - Handle to opened process.
 ///* ```Err``` - Error reason.
@@ -266,11 +333,11 @@ pub fn open_process(pid: u32, access_rights: u32) -> Result<HANDLE, WindowsError
 
 ///Closes opened process.
 ///
-///# Parameters:
+///# Parameters
 ///
 ///* ```process``` - pointer to a opened process.
 ///
-///# Return:
+///# Return
 ///
 ///* ```Ok``` - Success.
 ///* ```Err``` - Error reason.
@@ -286,13 +353,13 @@ pub fn close_process(process: HANDLE) -> Result<(), WindowsError> {
 
 ///Reads process memory.
 ///
-///# Parameters:
+///# Parameters
 ///
 ///* ```process``` - Pointer to a opened process.
 ///* ```base_addr``` - Address from where to start reading.
 ///* ```read_size``` - Length of data to read.
 ///
-///# Return:
+///# Return
 ///
 ///* ```Ok``` - Vector with data.
 ///* ```Err``` - Error reason.
@@ -313,13 +380,13 @@ pub fn read_process_memory(process: HANDLE, base_addr: u32, read_size: usize) ->
 
 ///Writes into process memory.
 ///
-///# Parameters:
+///# Parameters
 ///
 ///* ```process``` - Pointer to a opened process.
 ///* ```base_addr``` - Address from where to start writing.
 ///* ```data``` - Slice with write data.
 ///
-///# Return:
+///# Return
 ///
 ///* ```Ok``` - Success.
 ///* ```Err``` - Error reason.
@@ -339,12 +406,12 @@ pub fn write_process_memory(process: HANDLE, base_addr: u32, data: &[u8]) -> Res
 use std::os::windows::ffi::OsStrExt;
 ///Search for a window's handle.
 ///
-///# Parameters:
+///# Parameters
 ///
 ///* ```class_name``` - Name of window's class.
 ///* ```window_name``` - Window's title.
 ///
-///# Return:
+///# Return
 ///
 ///* ```Ok``` - Handle to window.
 ///* ```Err``` - Error reason.
@@ -374,14 +441,14 @@ pub fn find_window<T: AsRef<std::ffi::OsStr>>(class_name: T, window_name: Option
 
 ///Search for a window's child.
 ///
-///# Parameters:
+///# Parameters
 ///
 ///* ```class_name``` - Name of window's class.
 ///* ```window_name``` - Window's title.
 ///* ```parent``` - Handle to a parent window. Default is desktop.
 ///* ```child_after``` - Handle to a child window after which to start search.
 ///
-///# Return:
+///# Return
 ///
 ///* ```Ok``` - Handle to window.
 ///* ```Err``` - Error reason.
@@ -441,7 +508,7 @@ pub fn send_message(window: HWND,
                     timeout: Option<winapi::minwindef::UINT>) -> Result<LRESULT, WindowsError> {
     if let Some(timeout) = timeout {
         unsafe {
-            let mut result: u64 = 0;
+            let mut result: winapi::basetsd::ULONG_PTR = 0;
             let result_ptr = &mut result as winapi::basetsd::PDWORD_PTR;
             if SendMessageTimeoutW(window, msg_type, w_param, l_param, SMTO_BLOCK, timeout, result_ptr) == 0 {
                 return Err(WindowsError::from_last_err());
@@ -508,9 +575,10 @@ pub fn send_get_text(window: HWND) -> Option<String> {
 
     let text: Vec<u16> = vec![0; buf_len as usize];
     let text_ptr = text.as_ptr() as *const u16 as LPARAM;
-    send_message(window, WM_GETTEXT, buf_len as WPARAM, text_ptr, None).unwrap();
+    //Does not include null char
+    let buf_len = send_message(window, WM_GETTEXT, buf_len as WPARAM, text_ptr, None).unwrap() as usize;
 
-    Some(String::from_utf16_lossy(&text))
+    Some(String::from_utf16_lossy(&text[..buf_len]))
 }
 
 ///Sends sys command to a window.
@@ -529,7 +597,8 @@ pub fn send_get_text(window: HWND) -> Option<String> {
 ///* ```false``` - Otherwise.
 pub fn send_sys_command(window: HWND, cmd_type: WPARAM, l_param: LPARAM) -> bool {
     let result = send_message(window, WM_SYSCOMMAND, cmd_type, l_param, None);
-    result.is_ok() && result.unwrap() != 0
+    //Return is zero if Application proceed message.
+    result.is_ok() && result.unwrap() == 0
 }
 
 ///Windows process representation

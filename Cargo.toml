@@ -1,6 +1,6 @@
 [package]
 name = "windows-win"
-version = "0.5.0"
+version = "0.6.0"
 authors = ["Douman <douman@gmx.se>"]
 description = "Some windows hacking library with utilities to find windows and access them"
 repository = "https://github.com/DoumanAsh/windows-win-rs"
