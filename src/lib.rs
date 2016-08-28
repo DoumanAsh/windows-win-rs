@@ -17,12 +17,14 @@ use winapi::windef::{
 use winapi::minwindef::{
     LPARAM,
     WPARAM,
-    LRESULT
+    LRESULT,
+    UINT
 };
 use winapi::winnt::HANDLE;
 
 //WinAPI constants
 use winapi::winuser::{
+    LPMSG,
     SMTO_BLOCK,
     WM_SYSCOMMAND,
     WM_GETTEXT,
@@ -31,7 +33,7 @@ use winapi::winuser::{
 };
 
 ///Button click message type
-pub const BM_CLICK: winapi::minwindef::UINT = 0x00F5;
+pub const BM_CLICK: UINT = 0x00F5;
 
 //WinAPI functions
 use user32::{
@@ -44,7 +46,12 @@ use user32::{
     RealGetWindowClassW,
     EnumChildWindows,
     EnumWindows,
-    GetWindowThreadProcessId
+    GetWindowThreadProcessId,
+    GetMessageW,
+    TranslateMessage,
+    DispatchMessageW,
+    PeekMessageW,
+    GetActiveWindow
 };
 
 use kernel32::{
@@ -53,6 +60,8 @@ use kernel32::{
     ReadProcessMemory,
     WriteProcessMemory,
     QueryFullProcessImageNameW,
+    GetCurrentProcess,
+    GetConsoleWindow
 };
 
 ///Determines if window is visible.
@@ -531,10 +540,10 @@ pub fn find_child_window<T: AsRef<std::ffi::OsStr>>(class_name: T,
 ///* ```Ok``` - Message has been sent  successfully.
 ///* ```Err``` - Error reason. Relevant only to message with timeout.
 pub fn send_message(window: HWND,
-                    msg_type: winapi::minwindef::UINT,
+                    msg_type: UINT,
                     w_param: WPARAM,
                     l_param: LPARAM,
-                    timeout: Option<winapi::minwindef::UINT>) -> Result<LRESULT, WindowsError> {
+                    timeout: Option<UINT>) -> Result<LRESULT, WindowsError> {
     if let Some(timeout) = timeout {
         unsafe {
             let mut result: winapi::basetsd::ULONG_PTR = 0;
@@ -558,7 +567,7 @@ pub fn send_message(window: HWND,
 ///
 ///* ```window``` - Handle to the window for which to send.
 ///* ```timeout``` - Optional timeout in milliseconds.
-pub fn send_push_button(window: HWND, timeout: Option<winapi::minwindef::UINT>) -> Result<LRESULT, WindowsError> {
+pub fn send_push_button(window: HWND, timeout: Option<UINT>) -> Result<LRESULT, WindowsError> {
     send_message(window, BM_CLICK, 0, 0, timeout)
 }
 
@@ -628,6 +637,125 @@ pub fn send_sys_command(window: HWND, cmd_type: WPARAM, l_param: LPARAM) -> bool
     let result = send_message(window, WM_SYSCOMMAND, cmd_type, l_param, None);
     //Return is zero if Application proceed message.
     result.is_ok() && result.unwrap() == 0
+}
+
+///Retrieves a message from the calling thread's message queue. A block call.
+///
+///# Parameters:
+///
+///* ```window``` - A handle to the window whose messages are to be retrieved. The window must belong to the current thread.
+///* ```range_low``` - Integer value of the lowest message to retrieve.
+///* ```range_high``` - Integer value of the highest message to retrieve.
+///
+///# Return
+///
+///* ```Ok``` - Successfully retrieved message..
+///* ```Err``` - Impossible to retrieve message.
+pub fn get_message(window: Option<HWND>, range_low: Option<UINT>, range_high: Option<UINT>) -> Result<LPMSG, WindowsError> {
+    let msg_ptr: LPMSG = std::ptr::null_mut();
+
+    let result = unsafe { GetMessageW(msg_ptr,
+                                      window.unwrap_or(std::ptr::null_mut()),
+                                      range_low.unwrap_or(0),
+                                      range_high.unwrap_or(0)) };
+
+    if result < 0 {
+        Err(WindowsError::from_last_err())
+    }
+    else {
+        Ok(msg_ptr)
+    }
+}
+
+///Retrieves a message from the calling thread's message queue.
+///
+///A non-blocking version of ```get_message```
+///
+///# Parameters:
+///
+///* ```window``` - A handle to the window whose messages are to be retrieved. The window must belong to the current thread.
+///* ```range_low``` - Integer value of the lowest message to retrieve.
+///* ```range_high``` - Integer value of the highest message to retrieve.
+///* ```handle_type``` - Determines how retrieved message is handled. See [details](https://msdn.microsoft.com/en-us/library/windows/desktop/ms644943(v=vs.85).aspx)
+///
+///# Return
+///
+///* ```Ok``` - Successfully retrieved message..
+///* ```Err``` - Impossible to retrieve message.
+pub fn peek_message(window: Option<HWND>, range_low: Option<UINT>, range_high: Option<UINT>, handle_type: Option<UINT>) -> Result<LPMSG, WindowsError> {
+    let msg_ptr: LPMSG = std::ptr::null_mut();
+
+    let result = unsafe { PeekMessageW(msg_ptr,
+                                       window.unwrap_or(std::ptr::null_mut()),
+                                       range_low.unwrap_or(0),
+                                       range_high.unwrap_or(0),
+                                       handle_type.unwrap_or(0)) };
+
+    if result < 0 {
+        Err(WindowsError::from_last_err())
+    }
+    else {
+        Ok(msg_ptr)
+    }
+}
+
+#[inline]
+///Translates virtual-key messages into character messages.
+///
+///The character messages are posted to the calling thread's message queue.
+///
+///# Parameters:
+///
+///* ```msg``` - Pointer to message retrieved by ```get_message```.
+///
+///# Return
+///
+///* ```true``` - Translation happened.
+///* ```false``` - Otherwise.
+pub fn translate_message(msg: LPMSG) -> bool {
+    unsafe {
+        TranslateMessage(msg) != 0
+    }
+}
+
+#[inline]
+///Dispatches a message to a window procedure.
+///
+///# Parameters:
+///
+///* ```msg``` - Pointer to message retrieved by ```get_message```.
+///
+///# Return:
+///
+///Integer value whose meaning depends on dispatched messaged. Can be ignored.
+pub fn dispatch_message(msg: LPMSG) -> LRESULT {
+    unsafe {
+        DispatchMessageW(msg)
+    }
+}
+
+#[inline]
+///Retrieves pseudo-handler of the calling process.
+pub fn get_current_proc_handle() -> HANDLE {
+    unsafe {
+        GetCurrentProcess()
+    }
+}
+
+#[inline]
+///Retrieves the window handle to the active window attached to the calling thread's message queue.
+pub fn get_active_window() -> HWND {
+    unsafe {
+        GetActiveWindow()
+    }
+}
+
+#[inline]
+///Retrieves the window handle used by the console associated with the calling process.
+pub fn get_console_window() -> HWND {
+    unsafe {
+        GetConsoleWindow()
+    }
 }
 
 ///Windows process representation
