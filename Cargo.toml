@@ -1,14 +1,14 @@
 [package]
 name = "windows-win"
-version = "0.8.0"
+version = "0.8.1"
 authors = ["Douman <douman@gmx.se>"]
 description = "Some windows hacking library with utilities to find windows and access them"
 repository = "https://github.com/DoumanAsh/windows-win-rs"
-documentation = "http://doumanash.github.io/windows-win-rs/doc/windows_win/index.html"
+documentation = "https://docs.rs/crate/windows-win/"
 license = "MIT"
 keywords = ["Windows", "winapi"]
 
-[dependencies]
+[target.'cfg(windows)'.dependencies]
 winapi = "^0.2.8"
 user32-sys = "^0.2.0"
 kernel32-sys = "^0.2.1"

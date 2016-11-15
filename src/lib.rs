@@ -1,3 +1,4 @@
+#![cfg(windows)]
 //! Windows WinAPI
 //!
 //! Some windows hacking library with utilities to find windows and access them.
