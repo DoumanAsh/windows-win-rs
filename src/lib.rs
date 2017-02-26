@@ -136,6 +136,7 @@ impl Drop for Process {
 ///Wrapper over Windows messages.
 ///
 ///On drop it translates and dispatches message.
+///You can do it yourself though.
 pub struct Msg {
     inner: LPMSG
 }
@@ -162,6 +163,12 @@ impl Msg {
         mem::forget(self);
         result
     }
+
+    ///Drops and Dispatches underlying Windows Message.
+    ///You cannot use it after that.
+    pub fn dispatch(self) {
+        drop(self);
+    }
 }
 
 impl Drop for Msg {
@@ -182,8 +189,7 @@ impl Drop for Msg {
 pub struct Messages {
     window: Option<HWND>,
     range: (Option<UINT>, Option<UINT>),
-    is_block: bool,
-    non_block_param: Option<UINT>
+    is_block: bool
 }
 
 impl Messages {
@@ -192,8 +198,7 @@ impl Messages {
         Messages {
             window: None,
             range: (None, None),
-            is_block: true,
-            non_block_param: None
+            is_block: true
         }
     }
 
@@ -224,9 +229,10 @@ impl Messages {
     ///Sets non blocking mode.
     ///
     ///You can provide how to handle retrieved messages as in [peek()](raw/message/fn.peek.html).
-    pub fn non_blocking(&mut self, handle_type: Option<UINT>) -> &mut Messages {
+    ///It sets `PM_REMOVE` to remove message, but not that it is not always guaranteed.
+    ///See docs on `PeekMessage`
+    pub fn non_blocking(&mut self) -> &mut Messages {
         self.is_block = false;
-        self.non_block_param = handle_type;
         self
     }
 }
@@ -242,7 +248,7 @@ impl Iterator for Messages {
             Some(raw::message::get(self.window, self.range.0, self.range.1).map(|msg| Msg::new(msg)))
         }
         else {
-            match raw::message::peek(self.window, self.range.0, self.range.1, self.non_block_param) {
+            match raw::message::peek(self.window, self.range.0, self.range.1, Some(0x0001)) {
                 Ok(Some(msg)) => Some(Ok(Msg::new(msg))),
                 Ok(None) => None,
                 Err(error) => Some(Err(error))
