@@ -1,16 +1,25 @@
 [package]
 name = "windows-win"
-version = "0.8.1"
+version = "1.0.0-pre.1"
 authors = ["Douman <douman@gmx.se>"]
 description = "Some windows hacking library with utilities to find windows and access them"
-repository = "https://github.com/DoumanAsh/windows-win-rs"
-documentation = "https://docs.rs/crate/windows-win/"
 license = "MIT"
+
+repository = "https://github.com/DoumanAsh/windows-win-rs"
+documentation = "https://docs.rs/windows-win/*/x86_64-pc-windows-msvc/windows_win/"
+
 keywords = ["Windows", "winapi"]
+categories = []
+
+readme = "README.md"
 
 [target.'cfg(windows)'.dependencies]
 winapi = "^0.2.8"
 user32-sys = "^0.2.0"
 kernel32-sys = "^0.2.1"
-windows-error = "1.0.0"
 
+[badges]
+appveyor = { repository = "https://github.com/DoumanAsh/windows-win-rs", branch = "master", service = "github" }
+
+[package.metadata.docs.rs]
+default-target = "x86_64-pc-windows-msvc"

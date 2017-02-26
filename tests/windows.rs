@@ -1,17 +1,20 @@
 extern crate windows_win;
 
-use windows_win::{
-    get_windows_by_class,
-    get_windows_by_title,
-    get_window_by_pid,
+use windows_win::raw::window::{
+    get_by_class,
+    get_by_title,
+    get_by_pid,
+    is_visible,
+    get_text,
     send_get_text,
     send_set_text,
     send_sys_command,
-    is_window_visible,
-    get_window_text,
-    open_process,
-    close_process,
-    get_process_exe_path,
+};
+
+use windows_win::raw::process::{
+    open,
+    close,
+    get_exe_path,
 };
 
 fn start_prog(name: &str) -> std::process::Child {
@@ -28,7 +31,7 @@ fn sleep(ms: u64) {
 
 #[test]
 fn test_get_windows_by_class() {
-    let result = get_windows_by_class("IME", None);
+    let result = get_by_class("IME", None);
     assert!(result.is_ok());
     let result = result.unwrap();
     assert!(result.len() > 0);
@@ -45,34 +48,34 @@ fn test_interact_notepad() {
     //This test should be last as it closes notepad
     test_window_sys_command_close(notepad.id());
 
-    notepad.wait().expect("Failed to wait of closing");
+    notepad.wait().expect("Failed to wait for notepad to close");
 }
 
 fn test_query_process_exe(notepad_id: u32) {
-    let result = open_process(notepad_id, 0x0400);
+    let result = open(notepad_id, 0x0400);
     assert!(result.is_ok());
     let notepad = result.unwrap();
 
-    let result = get_process_exe_path(notepad);
+    let result = get_exe_path(notepad);
     assert!(result.is_ok());
     let result = result.unwrap();
     assert!(result.starts_with("C:\\Windows\\"));
     assert!(result.ends_with("\\notepad.exe"));
 
-    let result = close_process(notepad);
+    let result = close(notepad);
     assert!(result.is_ok());
 }
 
 fn test_open_close(notepad_id: u32) {
-    let result = open_process(notepad_id, 0x0038);
+    let result = open(notepad_id, 0x0038);
     assert!(result.is_ok());
 
-    let result = close_process(result.unwrap());
+    let result = close(result.unwrap());
     assert!(result.is_ok());
 }
 
 fn test_get_windows_by_title(notepad_id: u32) {
-    let notepad_window = get_window_by_pid(notepad_id);
+    let notepad_window = get_by_pid(notepad_id);
     assert!(notepad_window.is_ok());
     let notepad_window = notepad_window.unwrap();
     assert!(notepad_window.is_some());
@@ -82,13 +85,13 @@ fn test_get_windows_by_title(notepad_id: u32) {
     assert!(result.is_some());
     let notepad_orig_title = result.unwrap();
 
-    let result = get_windows_by_title(&notepad_orig_title, None);
+    let result = get_by_title(&notepad_orig_title, None);
     assert!(result.is_ok());
     let result = result.unwrap();
     assert!(result.len() > 0);
     let result = result[0];
 
-    let result = get_window_text(result);
+    let result = get_text(result);
     assert!(result.is_ok());
     let result = result.unwrap();
 
@@ -96,7 +99,7 @@ fn test_get_windows_by_title(notepad_id: u32) {
 }
 
 fn test_window_set_text_message(notepad_id: u32) {
-    let notepad_window = get_window_by_pid(notepad_id);
+    let notepad_window = get_by_pid(notepad_id);
     assert!(notepad_window.is_ok());
     let notepad_window = notepad_window.unwrap();
     assert!(notepad_window.is_some());
@@ -118,13 +121,13 @@ fn test_window_set_text_message(notepad_id: u32) {
 }
 
 fn test_window_sys_command_close(notepad_id: u32) {
-    let notepad_window = get_window_by_pid(notepad_id);
+    let notepad_window = get_by_pid(notepad_id);
     assert!(notepad_window.is_ok());
     let notepad_window = notepad_window.unwrap();
     assert!(notepad_window.is_some());
     let notepad_window = notepad_window.unwrap();
 
-    assert!(is_window_visible(notepad_window) == true);
+    assert!(is_visible(notepad_window) == true);
     assert!(send_sys_command(notepad_window, 0xF060, 0));
-    assert!(is_window_visible(notepad_window) == false);
+    assert!(is_visible(notepad_window) == false);
 }
