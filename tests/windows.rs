@@ -1,4 +1,10 @@
 extern crate windows_win;
+extern crate clipboard_win;
+extern crate user32;
+
+use clipboard_win::{
+    set_clipboard_string
+};
 
 use windows_win::raw::window::{
     get_by_class,
@@ -9,6 +15,8 @@ use windows_win::raw::window::{
     send_get_text,
     send_set_text,
     send_sys_command,
+    Builder,
+    destroy
 };
 
 use windows_win::raw::process::{
@@ -130,4 +138,24 @@ fn test_window_sys_command_close(notepad_id: u32) {
     assert!(is_visible(notepad_window) == true);
     assert!(send_sys_command(notepad_window, 0xF060, 0));
     assert!(is_visible(notepad_window) == false);
+}
+
+#[test]
+fn test_window_create() {
+    let window = Builder::new().class_name("BUTTON").parent_message().create();
+    assert!(window.is_ok());
+    let window = window.unwrap();
+
+    unsafe { user32::AddClipboardFormatListener(window); }
+
+    assert!(set_clipboard_string("Test").is_ok());
+    let msg = windows_win::Messages::new().window(Some(window)).next();
+    assert!(msg.is_some());
+    let msg = msg.unwrap();
+    assert!(msg.is_ok());
+    let msg = msg.unwrap();
+
+    assert_eq!(msg.id(), 797); //Clipboard update
+
+    assert!(destroy(window));
 }

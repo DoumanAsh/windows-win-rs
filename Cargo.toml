@@ -23,3 +23,6 @@ appveyor = { repository = "https://github.com/DoumanAsh/windows-win-rs", branch 
 
 [package.metadata.docs.rs]
 default-target = "x86_64-pc-windows-msvc"
+
+[target.'cfg(windows)'.dev-dependencies]
+clipboard-win = "^2"

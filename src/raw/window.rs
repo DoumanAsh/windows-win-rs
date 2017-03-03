@@ -489,3 +489,145 @@ pub fn get_console() -> HWND {
         GetConsoleWindow()
     }
 }
+
+///A window builder.
+///
+///To successfully create window at least class name should be specified.
+///You can use pre-defined [classes](https://msdn.microsoft.com/en-us/library/windows/desktop/ms633574(v=vs.85).aspx#system) for simple message only window.
+pub struct Builder {
+    ex_style: DWORD,
+    class_name: Option<Vec<u16>>,
+    window_name: Option<Vec<u16>>,
+    style: DWORD,
+    position: (c_int, c_int),
+    width: c_int,
+    height: c_int,
+    parent: HWND,
+    menu: HMENU,
+    inst: HINSTANCE,
+    param: Option<CREATESTRUCTW>
+}
+
+impl Builder {
+    ///Initialize builder.
+    pub fn new() -> Builder {
+        Builder {
+            ex_style: 0,
+            class_name: None,
+            window_name: None,
+            style: 0,
+            position: (CW_USEDEFAULT, CW_USEDEFAULT),
+            width: CW_USEDEFAULT,
+            height: CW_USEDEFAULT,
+            parent: ptr::null_mut(),
+            menu: ptr::null_mut(),
+            inst: ptr::null_mut(),
+            param: None
+        }
+    }
+
+    ///Sets style.
+    ///
+    ///See possible [values](https://msdn.microsoft.com/en-us/library/ms632600(v=vs.85).aspx)
+    pub fn style(&mut self, value: DWORD) -> &mut Builder {
+        self.style = value;
+        self
+    }
+
+    ///Sets extended style.
+    ///
+    ///See possible [values](https://msdn.microsoft.com/en-us/library/ff700543(v=vs.85).aspx)
+    pub fn ex_style(&mut self, value: DWORD) -> &mut Builder {
+        self.ex_style = value;
+        self
+    }
+
+    ///Sets class name.
+    pub fn class_name<T: AsRef<ffi::OsStr>>(&mut self, value: T) -> &mut Builder {
+        let mut class_name: Vec<u16> = value.as_ref().encode_wide().collect();
+        class_name.push(0);
+        self.class_name = Some(class_name);
+        self
+    }
+
+    ///Sets class name.
+    pub fn window_name<T: AsRef<ffi::OsStr>>(&mut self, value: T) -> &mut Builder {
+        let mut window_name: Vec<u16> = value.as_ref().encode_wide().collect();
+        window_name.push(0);
+        self.window_name = Some(window_name);
+        self
+    }
+
+    ///Sets position. Default is `(CW_USEDEFAULT, CW_USEDEFAULT`.
+    pub fn position(&mut self, x: c_int, y: c_int) -> &mut Builder {
+        self.position.0 = x;
+        self.position.1 = y;
+        self
+    }
+
+    ///Sets size of window. Default is `CW_USEDEFAULT`.
+    pub fn size(&mut self, width: c_int, height: c_int) -> &mut Builder {
+        self.width = width;
+        self.height = height;
+        self
+    }
+
+    ///Sets parent window. Default is `null`
+    pub fn parent(&mut self, value: HWND) -> &mut Builder {
+        self.parent = value;
+        self
+    }
+
+    ///Sets parent window to message only `HWND_MESSAGE`.
+    pub fn parent_message(&mut self) -> &mut Builder {
+        self.parent = HWND_MESSAGE;
+        self
+    }
+
+    ///Seta module instance associated with window.
+    pub fn instance(&mut self, value: HINSTANCE) -> &mut Builder {
+        self.inst = value;
+        self
+    }
+
+    ///Sets param which will be sent in `WM_CREATE`
+    pub fn param(&mut self, value: &CREATESTRUCTW) -> &mut Builder {
+        self.param = Some(value.clone());
+        self
+    }
+
+    ///Creates window.
+    pub fn create(&mut self) -> io::Result<HWND> {
+        let param = self.param.as_mut()
+                              .map(|create_struct| create_struct as *mut CREATESTRUCTW as *mut c_void)
+                              .unwrap_or(ptr::null_mut());
+
+        let result = unsafe { CreateWindowExW(self.ex_style,
+                                              self.class_name.as_mut().map(|val| val.as_ptr()).unwrap_or(ptr::null()),
+                                              self.window_name.as_mut().map(|val| val.as_ptr()).unwrap_or(ptr::null()),
+                                              self.style,
+                                              self.position.0, self.position.1,
+                                              self.width, self.height,
+                                              self.parent,
+                                              self.menu,
+                                              self.inst,
+                                              param) };
+
+        if result.is_null() {
+            Err(utils::get_last_error())
+        }
+        else {
+            Ok(result)
+        }
+    }
+}
+
+///Destroy window.
+///
+///`WM_DESTROY` and `WM_NCDESTROY` are sent after.
+#[inline]
+pub fn destroy(window: HWND) -> bool {
+    unsafe {
+        DestroyWindow(window) != 0
+    }
+}

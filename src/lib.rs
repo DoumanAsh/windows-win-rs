@@ -25,7 +25,7 @@ use os::windows::raw::HANDLE;
 use inner_raw::winapi::{
     HWND,
     UINT,
-    LPMSG
+    MSG
 };
 
 ///Windows process representation
@@ -138,32 +138,53 @@ impl Drop for Process {
 ///On drop it translates and dispatches message.
 ///You can do it yourself though.
 pub struct Msg {
-    inner: LPMSG
+    inner: MSG
 }
 
 impl Msg {
-    pub fn new(message: LPMSG) -> Msg {
+    pub fn new(message: MSG) -> Msg {
         Msg {
             inner: message
         }
     }
 
+    #[inline]
+    ///Message identifier.
+    pub fn id(&self) -> UINT {
+        self.inner.message
+    }
+
+    #[inline]
+    ///Pointer to inner message.
+    pub fn as_ptr(&self) -> *const MSG {
+        &self.inner as *const MSG
+    }
+
+    #[inline]
+    ///Mutable pointer to inner message.
+    pub fn as_mut_ptr(&mut self) -> *mut MSG {
+        &mut self.inner as *mut MSG
+    }
+
+    #[inline]
     ///Retrieves raw Windows Message.
     ///
     ///Ownership is not passed so do not manually dispatch it.
-    pub fn inner(&self) -> LPMSG {
+    pub fn inner(&self) -> MSG {
         self.inner
     }
 
+    #[inline]
     ///Retrieves raw Windows Message and transfers ownership.
     ///
     ///After that user is responsible to dispatch message.
-    pub fn into_inner(&mut self) -> LPMSG {
+    pub fn into_inner(&mut self) -> MSG {
         let result = self.inner;
         mem::forget(self);
         result
     }
 
+    #[inline]
     ///Drops and Dispatches underlying Windows Message.
     ///You cannot use it after that.
     pub fn dispatch(self) {
@@ -173,8 +194,8 @@ impl Msg {
 
 impl Drop for Msg {
     fn drop(&mut self) {
-        raw::message::translate(self.inner);
-        raw::message::dispatch(self.inner);
+        raw::message::translate(self.as_mut_ptr());
+        raw::message::dispatch(self.as_mut_ptr());
     }
 }
 

@@ -4,6 +4,7 @@ extern crate kernel32;
 
 pub use os::raw::{
     c_uint,
+    c_int,
     c_void
 };
 
@@ -11,7 +12,8 @@ pub use os::windows::raw::HANDLE;
 
 //WinAPI types
 pub use self::winapi::windef::{
-    HWND
+    HWND,
+    HMENU
 };
 
 pub use self::winapi::basetsd::{
@@ -29,7 +31,9 @@ pub use self::winapi::minwindef::{
     WPARAM,
     LRESULT,
     UINT,
-    MAX_PATH
+    MAX_PATH,
+    HINSTANCE,
+    DWORD
 };
 
 //WinAPI constants
@@ -39,7 +43,11 @@ pub use self::winapi::winuser::{
     WM_SYSCOMMAND,
     WM_GETTEXT,
     WM_GETTEXTLENGTH,
-    WM_SETTEXT
+    WM_SETTEXT,
+    CW_USEDEFAULT,
+    CREATESTRUCTW,
+    HWND_MESSAGE,
+    MSG
 };
 
 //WinAPI functions
@@ -58,7 +66,9 @@ pub use self::user32::{
     TranslateMessage,
     DispatchMessageW,
     PeekMessageW,
-    GetActiveWindow
+    GetActiveWindow,
+    CreateWindowExW,
+    DestroyWindow
 };
 
 pub use self::kernel32::{

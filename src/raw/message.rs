@@ -2,6 +2,7 @@
 
 use ::io;
 use ::ptr;
+use ::mem;
 
 use ::inner_raw as raw;
 use self::raw::winapi::*;
@@ -19,10 +20,10 @@ use ::utils;
 ///
 ///* ```Ok``` - Successfully retrieved message..
 ///* ```Err``` - Impossible to retrieve message.
-pub fn get(window: Option<HWND>, range_low: Option<UINT>, range_high: Option<UINT>) -> io::Result<LPMSG> {
-    let msg_ptr: LPMSG = ptr::null_mut();
+pub fn get(window: Option<HWND>, range_low: Option<UINT>, range_high: Option<UINT>) -> io::Result<MSG> {
+    let mut msg: MSG = unsafe { mem::zeroed() };
 
-    let result = unsafe { GetMessageW(msg_ptr,
+    let result = unsafe { GetMessageW(&mut msg as LPMSG,
                                       window.unwrap_or(ptr::null_mut()),
                                       range_low.unwrap_or(0),
                                       range_high.unwrap_or(0)) };
@@ -31,7 +32,7 @@ pub fn get(window: Option<HWND>, range_low: Option<UINT>, range_high: Option<UIN
         Err(utils::get_last_error())
     }
     else {
-        Ok(msg_ptr)
+        Ok(msg)
     }
 }
 
@@ -52,10 +53,10 @@ pub fn get(window: Option<HWND>, range_low: Option<UINT>, range_high: Option<UIN
 ///
 ///* ```Ok``` - Successfully retrieved message..
 ///* ```Err``` - Impossible to retrieve message.
-pub fn peek(window: Option<HWND>, range_low: Option<UINT>, range_high: Option<UINT>, handle_type: Option<UINT>) -> io::Result<Option<LPMSG>> {
-    let msg_ptr: LPMSG = ptr::null_mut();
+pub fn peek(window: Option<HWND>, range_low: Option<UINT>, range_high: Option<UINT>, handle_type: Option<UINT>) -> io::Result<Option<MSG>> {
+    let mut msg: MSG = unsafe { mem::zeroed() };
 
-    let result = unsafe { PeekMessageW(msg_ptr,
+    let result = unsafe { PeekMessageW(&mut msg as LPMSG,
                                        window.unwrap_or(ptr::null_mut()),
                                        range_low.unwrap_or(0),
                                        range_high.unwrap_or(0),
@@ -68,7 +69,7 @@ pub fn peek(window: Option<HWND>, range_low: Option<UINT>, range_high: Option<UI
         Ok(None)
     }
     else {
-        Ok(Some(msg_ptr))
+        Ok(Some(msg))
     }
 }
 
