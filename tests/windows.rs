@@ -140,6 +140,7 @@ fn test_window_sys_command_close(notepad_id: u32) {
     assert!(is_visible(notepad_window) == false);
 }
 
+#[cfg(target_env="msvc")]
 #[test]
 fn test_window_create() {
     let window = Builder::new().class_name("BUTTON").parent_message().create();
