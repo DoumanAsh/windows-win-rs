@@ -6,6 +6,10 @@ use clipboard_win::{
     set_clipboard_string
 };
 
+use windows_win::{
+    Window
+};
+
 use windows_win::raw::window::{
     get_by_class,
     get_by_title,
@@ -143,14 +147,14 @@ fn test_window_sys_command_close(notepad_id: u32) {
 #[cfg(target_env="msvc")]
 #[test]
 fn test_window_create() {
-    let window = Builder::new().class_name("BUTTON").parent_message().create();
+    let window = Window::from_builder(Builder::new().class_name("BUTTON").parent_message());
     assert!(window.is_ok());
     let window = window.unwrap();
 
-    unsafe { user32::AddClipboardFormatListener(window); }
+    unsafe { user32::AddClipboardFormatListener(window.inner()); }
 
     assert!(set_clipboard_string("Test").is_ok());
-    let msg = windows_win::Messages::new().window(Some(window)).next();
+    let msg = windows_win::Messages::new().window(Some(window.inner())).next();
     assert!(msg.is_some());
     let msg = msg.unwrap();
     assert!(msg.is_ok());
@@ -158,5 +162,13 @@ fn test_window_create() {
 
     assert_eq!(msg.id(), 797); //Clipboard update
 
+    assert!(destroy(window.into()));
+}
+
+#[test]
+fn test_window_create_dummy() {
+    let window = Builder::new().class_name("BUTTON").create();
+    assert!(window.is_ok());
+    let window = window.unwrap();
     assert!(destroy(window));
 }

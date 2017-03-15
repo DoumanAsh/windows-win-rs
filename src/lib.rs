@@ -9,6 +9,7 @@ use std::os;
 use std::io;
 use std::ptr;
 use std::ffi;
+use std::convert;
 
 #[path="raw/mod.rs"]
 mod inner_raw;
@@ -25,6 +26,9 @@ use os::windows::raw::HANDLE;
 use inner_raw::winapi::{
     HWND,
     UINT,
+    WPARAM,
+    LPARAM,
+    LRESULT,
     MSG
 };
 
@@ -178,7 +182,7 @@ impl Msg {
     ///Retrieves raw Windows Message and transfers ownership.
     ///
     ///After that user is responsible to dispatch message.
-    pub fn into_inner(&mut self) -> MSG {
+    pub fn into_inner(self) -> MSG {
         let result = self.inner;
         mem::forget(self);
         result
@@ -275,5 +279,134 @@ impl Iterator for Messages {
                 Err(error) => Some(Err(error))
             }
         }
+    }
+}
+
+///Convenient wrapper over Window.
+///
+///Note that while you can use it with any window.
+///It makes no sense in taking ownership of not created by you windows.
+///
+///This struct destroys window on drop and it is bad idea to do it for not your own window.
+///If lucky, it fails but still not great idea.
+pub struct Window {
+    inner: HWND
+}
+
+impl Window {
+    #[inline]
+    ///Creates new instance by taking ownership over provided window.
+    pub fn from_hwnd(window: HWND) -> Self {
+        Window { inner: window }
+    }
+
+    #[inline]
+    ///Creates window from instance of window builder.
+    pub fn from_builder(builder: &mut raw::window::Builder) -> io::Result<Self> {
+        builder.create().map(|win| Window::from_hwnd(win))
+    }
+
+    #[inline]
+    ///Returns underlying window.
+    ///
+    ///Ownership is not passed.
+    pub fn inner(&self) -> HWND {
+        self.inner
+    }
+
+    #[inline]
+    ///Transfers ownership of underlying window.
+    pub fn into_inner(self) -> HWND {
+        let result = self.inner;
+        mem::forget(self);
+        result
+    }
+
+    #[inline]
+    ///Returns whether window is visible.
+    pub fn is_visible(&self) -> bool {
+        raw::window::is_visible(self.inner)
+    }
+
+    #[inline]
+    ///Retrieves window's class.
+    pub fn class(&self) -> io::Result<String> {
+        raw::window::get_class(self.inner)
+    }
+
+    #[inline]
+    ///Retrieves window's title.
+    pub fn title(&self) -> io::Result<String> {
+        raw::window::get_text(self.inner)
+    }
+
+    #[inline]
+    ///Retrieves tuple of thread and process ids.
+    pub fn thread_pid(&self) -> (u32, u32) {
+        raw::window::get_thread_process_id(self.inner)
+    }
+
+    #[inline]
+    ///Sends message to underlying window.
+    ///
+    ///For more information refer to [send_message()](raw/window/fn.send_message.html)
+    pub fn send_message(&self, msg_type: UINT, w_param: WPARAM, l_param: LPARAM, timeout: Option<UINT>) -> io::Result<LRESULT> {
+        raw::window::send_message(self.inner, msg_type, w_param, l_param, timeout)
+    }
+
+    #[inline]
+    ///Sends `BM_CLICK` message to underlying window.
+    ///
+    ///For mores information refer to [send_push_button()](raw/window/fn.send_push_button.html)
+    pub fn send_push_button(&self, timeout: Option<UINT>) -> io::Result<LRESULT> {
+        raw::window::send_push_button(self.inner, timeout)
+    }
+
+    #[inline]
+    ///Sends `WM_SETTEXT` message to underlying window with new text.
+    ///
+    ///For more information refer to [send_set_text()](raw/window/fn.send_set_text.html)
+    pub fn send_set_text<T: AsRef<ffi::OsStr>>(&self, text: T) -> bool {
+        raw::window::send_set_text(self.inner, text)
+    }
+
+    #[inline]
+    ///Sends `WM_GETTEXT` message to underlying window and returns, if possible, corresponding text.
+    ///
+    ///For more information refer to [send_get_text()](raw/window/fn.send_get_text.html)
+    pub fn send_get_text(&self) -> Option<String> {
+        raw::window::send_get_text(self.inner)
+    }
+
+    #[inline]
+    ///Sends `WM_SYSCOMMAND` message to underlying window and returns, if possible, corresponding text.
+    ///
+    ///For more information refer to [send_sys_command()](raw/window/fn.send_sys_command.html)
+    pub fn send_sys_command(&self, cmd_type: WPARAM, l_param: LPARAM) -> bool {
+        raw::window::send_sys_command(self.inner, cmd_type, l_param)
+    }
+
+    #[inline]
+    ///Destroys underlying window and drops self.
+    pub fn destroy(self) {
+        drop(self);
+    }
+}
+
+impl convert::From<HWND> for Window {
+    fn from(window: HWND) -> Window {
+        Window { inner: window }
+    }
+}
+
+impl convert::Into<HWND> for Window {
+    fn into(self) -> HWND {
+        self.into_inner()
+    }
+}
+
+impl Drop for Window {
+    fn drop(&mut self) {
+        raw::window::destroy(self.inner);
     }
 }

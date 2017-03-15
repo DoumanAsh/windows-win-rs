@@ -1,6 +1,6 @@
 [package]
 name = "windows-win"
-version = "1.0.0"
+version = "1.1.0"
 authors = ["Douman <douman@gmx.se>"]
 description = "Some windows hacking library with utilities to find windows and access them"
 license = "MIT"
