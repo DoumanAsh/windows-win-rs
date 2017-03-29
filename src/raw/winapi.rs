@@ -16,6 +16,25 @@ pub use self::winapi::windef::{
     HMENU
 };
 
+pub use self::winapi::winerror::{
+    ERROR_NO_MORE_FILES
+};
+
+pub use self::winapi::shlobj::{
+    INVALID_HANDLE_VALUE
+};
+
+pub use self::winapi::minwinbase::{
+    WIN32_FIND_DATAW,
+    FINDEX_INFO_LEVELS,
+    FindExInfoStandard,
+    FindExInfoBasic,
+    FindExInfoMaxInfoLevel,
+    FindExSearchNameMatch,
+    FindExSearchLimitToDirectories,
+    FINDEX_SEARCH_OPS
+};
+
 pub use self::winapi::basetsd::{
     ULONG_PTR,
     PDWORD_PTR,
@@ -78,7 +97,10 @@ pub use self::kernel32::{
     WriteProcessMemory,
     QueryFullProcessImageNameW,
     GetCurrentProcess,
-    GetConsoleWindow
+    GetConsoleWindow,
+    FindFirstFileExW,
+    FindNextFileW,
+    FindClose
 };
 
 

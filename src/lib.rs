@@ -4,6 +4,7 @@
 //! Some windows hacking library with utilities to find windows and access them.
 //!
 
+use std::default;
 use std::mem;
 use std::os;
 use std::io;
@@ -20,6 +21,7 @@ pub mod raw {
     pub use inner_raw::process;
     pub use inner_raw::window;
     pub use inner_raw::message;
+    pub use inner_raw::file;
 }
 
 use os::windows::raw::HANDLE;
