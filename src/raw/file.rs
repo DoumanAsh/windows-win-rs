@@ -1,7 +1,10 @@
 //! Provides File Management functions
 
 use ::ffi;
-use ::os::windows::ffi::OsStrExt;
+use ::os::windows::ffi::{
+    OsStrExt,
+    OsStringExt
+};
 use ::default;
 use ::ptr;
 use ::mem;
@@ -65,59 +68,109 @@ impl default::Default for FileSearchType {
     }
 }
 
-///Starts File search.
-///
-///It returns handle to continue search.
-///
-///For details see description of [FindFirstFileExW](https://msdn.microsoft.com/en-us/library/windows/desktop/aa364419(v=vs.85).aspx)
-pub fn search<T: ?Sized + AsRef<ffi::OsStr>>(name: &T, level: FileInfoLevel, typ: FileSearchType, flags: DWORD) -> io::Result<Option<(HANDLE, WIN32_FIND_DATAW)>> {
-    let mut utf16_buff: Vec<u16> = name.as_ref().encode_wide().collect();
-    utf16_buff.push(0);
+///File System Entry.
+pub struct Entry(WIN32_FIND_DATAW);
 
-    let mut file_data: WIN32_FIND_DATAW = unsafe { mem::zeroed() };
-
-    let result = unsafe { FindFirstFileExW(utf16_buff.as_ptr(), level.into(), &mut file_data as *mut _ as *mut c_void, typ.into(), ptr::null_mut(), flags) };
-
-    if result == INVALID_HANDLE_VALUE {
-        let error = utils::get_last_error();
-
-        match error.raw_os_error() {
-            Some(NO_MORE_FILES) => Ok(None),
-            _ => Err(error)
-        }
+impl Entry {
+    ///Determines whether Entry is directory or not.
+    pub fn is_dir(&self) -> bool {
+        (self.0.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0
     }
-    else {
-        Ok(Some((result, file_data)))
+
+    ///Determines whether Entry is file or not.
+    pub fn is_file(&self) -> bool {
+        !self.is_dir()
+    }
+
+    ///Returns size of entry
+    pub fn size(&self) -> u64 {
+        ((self.0.nFileSizeHigh as u64) << 32) | (self.0.nFileSizeLow as u64)
+    }
+
+    pub fn is_read_only(&self) -> bool {
+        (self.0.dwFileAttributes & FILE_ATTRIBUTE_READONLY) != 0
+    }
+
+    ///Returns name of Entry.
+    pub fn name(&self) -> ffi::OsString {
+        ffi::OsString::from_wide(match self.0.cFileName.iter().position(|c| *c == 0) {
+            Some(n) => &self.0.cFileName[..n],
+            None => &self.0.cFileName
+        })
     }
 }
 
-///Continues search.
-pub fn search_next(handle: HANDLE) -> io::Result<Option<WIN32_FIND_DATAW>> {
-    let mut file_data: WIN32_FIND_DATAW = unsafe { mem::zeroed() };
+///File System Search iterator.
+pub struct Search(HANDLE);
 
-    unsafe {
-        if FindNextFileW(handle, &mut file_data) != 0 {
-            Ok(Some(file_data))
+impl Search {
+    ///Creates new instance of Search.
+    ///
+    ///Due to the way how underlying WinAPI works first entry is also returned alongside it.
+    pub fn new<T: ?Sized + AsRef<ffi::OsStr>>(name: &T, level: FileInfoLevel, typ: FileSearchType, flags: DWORD) -> io::Result<(Search, Entry)> {
+        let mut utf16_buff: Vec<u16> = name.as_ref().encode_wide().collect();
+        utf16_buff.push(0);
+
+        let mut file_data: WIN32_FIND_DATAW = unsafe { mem::zeroed() };
+
+        let result = unsafe {
+            FindFirstFileExW(utf16_buff.as_ptr(),
+                             level.into(),
+                             &mut file_data as *mut _ as *mut c_void,
+                             typ.into(),
+                             ptr::null_mut(),
+                             flags)
+        };
+
+        if result == INVALID_HANDLE_VALUE {
+            Err(utils::get_last_error())
         }
         else {
-            let error = utils::get_last_error();
+            Ok((Search(result), Entry(file_data)))
+        }
+    }
 
-            match error.raw_os_error() {
-                Some(NO_MORE_FILES) => Ok(None),
-                _ => Err(error)
+    ///Attempts to search again.
+    pub fn again(&self) -> io::Result<Entry> {
+        let mut file_data: WIN32_FIND_DATAW = unsafe { mem::zeroed() };
+
+        unsafe {
+            if FindNextFileW(self.0, &mut file_data) != 0 {
+                Ok(Entry(file_data))
+            }
+            else {
+                Err(utils::get_last_error())
+            }
+        }
+    }
+
+    ///Closes search.
+    pub fn close(self) {
+        drop(self.0);
+    }
+}
+
+impl Iterator for Search {
+    type Item = io::Result<Entry>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.again() {
+            Ok(data) => Some(Ok(data)),
+            Err(error) => {
+                match error.raw_os_error() {
+                    Some(NO_MORE_FILES) => None,
+                    _ => Some(Err(error))
+                }
             }
         }
     }
 }
 
-///Closes search.
-pub fn search_close(handle: HANDLE) -> io::Result<()> {
-    unsafe {
-        if FindClose(handle) != 0 {
-            Ok(())
-        }
-        else {
-            Err(utils::get_last_error())
+impl Drop for Search {
+    fn drop(&mut self) {
+        unsafe {
+            debug_assert!(FindClose(self.0) != 0);
         }
     }
 }
+

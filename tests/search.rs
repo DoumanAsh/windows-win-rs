@@ -8,37 +8,38 @@ use raw::file::*;
 
 #[test]
 fn try_search() {
-    let result = search("non-existing.rs", FileInfoLevel::default(), FileSearchType::default(), 0);
+    let result = Search::new("non-existing.rs", FileInfoLevel::default(), FileSearchType::default(), 0);
 
     assert!(result.is_err());
-
-    let error = result.err().unwrap();
-    println!("error={:?}", error);
 }
 
 #[test]
-fn search_and_find() {
-    let result = search(file!(), FileInfoLevel::default(), FileSearchType::default(), 0);
+fn search_self() {
+    let file_name = file!();
+    let result = Search::new(file_name, FileInfoLevel::default(), FileSearchType::default(), 0);
 
     assert!(result.is_ok());
 
-    let (handle, _) = result.unwrap().unwrap();
+    let (mut search, entry) = result.unwrap();
+    let name = entry.name();
 
-    assert!(search_close(handle).is_ok());
+    assert!(file_name.ends_with(name.as_os_str().to_str().unwrap()));
+    assert!(entry.is_file());
+
+    assert!(search.next().is_none());
 }
 
 #[test]
 fn search_few_rs() {
     let path = std::path::Path::new(file!()).parent().unwrap().join("*.rs");
-    let result = search(&path, FileInfoLevel::default(), FileSearchType::default(), 0);
+    let result = Search::new(&path, FileInfoLevel::default(), FileSearchType::default(), 0);
 
     assert!(result.is_ok());
 
-    let (handle, _) = result.unwrap().unwrap();
+    let (search, entry) = result.unwrap();
 
-    let result = search_next(handle);
-
-    assert!(result.is_ok());
-
-    assert!(search_close(handle).is_ok());
+    assert!(entry.is_file());
+    for entry in search {
+        assert!(entry.unwrap().is_file());
+    }
 }

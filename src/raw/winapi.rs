@@ -42,7 +42,9 @@ pub use self::winapi::basetsd::{
 };
 
 pub use self::winapi::winnt::{
-    LPWSTR
+    LPWSTR,
+    FILE_ATTRIBUTE_DIRECTORY,
+    FILE_ATTRIBUTE_READONLY
 };
 
 pub use self::winapi::minwindef::{
