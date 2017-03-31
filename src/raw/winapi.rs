@@ -5,6 +5,7 @@ extern crate kernel32;
 pub use os::raw::{
     c_uint,
     c_int,
+    c_ulong,
     c_void
 };
 
@@ -44,7 +45,8 @@ pub use self::winapi::basetsd::{
 pub use self::winapi::winnt::{
     LPWSTR,
     FILE_ATTRIBUTE_DIRECTORY,
-    FILE_ATTRIBUTE_READONLY
+    FILE_ATTRIBUTE_READONLY,
+    MEMORY_BASIC_INFORMATION
 };
 
 pub use self::winapi::minwindef::{
@@ -102,7 +104,9 @@ pub use self::kernel32::{
     GetConsoleWindow,
     FindFirstFileExW,
     FindNextFileW,
-    FindClose
+    FindClose,
+    GetProcessId,
+    VirtualQueryEx
 };
 
 

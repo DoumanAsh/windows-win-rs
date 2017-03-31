@@ -134,10 +134,13 @@ pub fn get_exe_path(process: HANDLE) -> io::Result<String> {
 }
 
 #[inline]
+pub fn get_id(process: HANDLE) -> c_ulong {
+    unsafe { GetProcessId(process) }
+}
+
+#[inline]
 ///Retrieves pseudo-handler of the calling process.
 pub fn get_current_handle() -> HANDLE {
-    unsafe {
-        GetCurrentProcess()
-    }
+    unsafe { GetCurrentProcess() }
 }
 

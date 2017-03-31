@@ -22,6 +22,7 @@ pub mod raw {
     pub use inner_raw::window;
     pub use inner_raw::message;
     pub use inner_raw::file;
+    pub use inner_raw::memory;
 }
 
 use os::windows::raw::HANDLE;
@@ -64,6 +65,30 @@ impl Process {
             }),
             Err(error) => Err(error),
         }
+    }
+
+    ///Creates instance from existing handle
+    pub fn from_raw(handle: HANDLE) -> Self {
+        Process {
+            pid: raw::process::get_id(handle),
+            inner: handle
+        }
+    }
+
+    #[inline]
+    ///Retrieves underlying handle.
+    pub fn inner(&self) -> HANDLE {
+        self.inner
+    }
+
+    #[inline]
+    ///Retrieves underlying handle and consumes self.
+    ///
+    ///Basically you're responsible to close handle now.
+    pub fn into_inner(self) -> HANDLE {
+        let result = self.inner;
+        mem::forget(self);
+        result
     }
 
     #[inline]
