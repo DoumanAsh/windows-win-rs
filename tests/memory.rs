@@ -16,6 +16,6 @@ fn query() {
     assert!(result.is_ok());
 
     let result = result.unwrap();
-
-    println!("{:?}", result);
+    //Well, most likely it should be free
+    assert!(result.is_free());
 }

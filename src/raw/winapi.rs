@@ -46,7 +46,10 @@ pub use self::winapi::winnt::{
     LPWSTR,
     FILE_ATTRIBUTE_DIRECTORY,
     FILE_ATTRIBUTE_READONLY,
-    MEMORY_BASIC_INFORMATION
+    MEMORY_BASIC_INFORMATION,
+    MEM_COMMIT,
+    MEM_FREE,
+    MEM_RESERVE
 };
 
 pub use self::winapi::minwindef::{
