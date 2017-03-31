@@ -123,7 +123,7 @@ impl Process {
     ///
     ///* ```base_addr``` - Address from where to start reading.
     ///* ```storage``` - Storage to hold memory. Its `len` determines amount of bytes to read.
-    pub fn read_memory(&self, base_addr: u32, storage: &mut [u8]) -> io::Result<()> {
+    pub fn read_memory(&self, base_addr: usize, storage: &mut [u8]) -> io::Result<()> {
         raw::process::read_memory(self.inner, base_addr, storage)
     }
 
@@ -139,7 +139,7 @@ impl Process {
     ///
     ///* ```Ok``` - Success.
     ///* ```Err``` - Error reason.
-    pub fn write_memory(&self, base_addr: u32, data: &[u8]) -> io::Result<()> {
+    pub fn write_memory(&self, base_addr: usize, data: &[u8]) -> io::Result<()> {
         raw::process::write_memory(self.inner, base_addr, data)
     }
 

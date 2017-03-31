@@ -64,7 +64,7 @@ pub fn close(process: HANDLE) -> io::Result<()> {
 ///
 ///* ```Ok``` - Vector with data.
 ///* ```Err``` - Error reason.
-pub fn read_memory(process: HANDLE, base_addr: u32, storage: &mut [u8]) -> io::Result<()> {
+pub fn read_memory(process: HANDLE, base_addr: usize, storage: &mut [u8]) -> io::Result<()> {
     let read_size = storage.len();
     let ret_val = unsafe {ReadProcessMemory(process,
                                             base_addr as *const c_void,
@@ -92,7 +92,7 @@ pub fn read_memory(process: HANDLE, base_addr: u32, storage: &mut [u8]) -> io::R
 ///
 ///* ```Ok``` - Success.
 ///* ```Err``` - Error reason.
-pub fn write_memory(process: HANDLE, base_addr: u32, data: &[u8]) -> io::Result<()> {
+pub fn write_memory(process: HANDLE, base_addr: usize, data: &[u8]) -> io::Result<()> {
     let ret_val = unsafe {WriteProcessMemory(process,
                                              base_addr as *mut c_void,
                                              data.as_ptr() as *const c_void,
