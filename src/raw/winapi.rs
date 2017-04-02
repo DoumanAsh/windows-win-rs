@@ -109,7 +109,8 @@ pub use self::kernel32::{
     FindNextFileW,
     FindClose,
     GetProcessId,
-    VirtualQueryEx
+    VirtualQueryEx,
+    TerminateProcess
 };
 
 

@@ -32,7 +32,8 @@ use inner_raw::winapi::{
     WPARAM,
     LPARAM,
     LRESULT,
-    MSG
+    MSG,
+    c_uint
 };
 
 ///Windows process representation
@@ -155,6 +156,15 @@ impl Process {
             raw::process::close(self.inner).expect("Unable to close process");
             self.inner = ptr::null_mut();
         }
+    }
+
+    ///Forces termination of process and consumes itself.
+    ///
+    ///For details see [raw::process::terminate()](raw/process/fn.terminate.html).
+    pub fn terminate(self, exit_code: c_uint) -> io::Result<()> {
+        raw::process::terminate(self.inner, exit_code).map(|_| {
+            let _ = self.into_inner();
+        })
     }
 }
 

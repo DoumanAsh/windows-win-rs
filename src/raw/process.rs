@@ -144,3 +144,21 @@ pub fn get_current_handle() -> HANDLE {
     unsafe { GetCurrentProcess() }
 }
 
+///Terminates process.
+///
+///# Parameters
+///
+///* ```process``` - Pointer to a opened process.
+///* ```code``` - Exit code that shall be used by affected process.
+///
+///# Note:
+///
+///It prevents process from running any clean-up.
+pub fn terminate(process: HANDLE, code: c_uint) -> io::Result<()> {
+    if unsafe { TerminateProcess(process, code) } != 0 {
+        Ok(())
+    }
+    else {
+        Err(utils::get_last_error())
+    }
+}
