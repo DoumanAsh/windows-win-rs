@@ -9,7 +9,7 @@ use raw::module::*;
 
 #[test]
 fn get_module_handle() {
-    let result = get_module_handle_from_addr(to_module_addr!(get_module_handle));
+    let result = get_module_handle_from_addr(module_to_addr!(get_module_handle));
 
     assert!(result.is_ok());
 

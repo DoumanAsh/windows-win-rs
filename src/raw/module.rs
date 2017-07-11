@@ -9,8 +9,9 @@ use ::utils;
 
 #[macro_export]
 ///Converts ident to module address.
+///
 ///Mostly to be used with module's functions.
-macro_rules! to_module_addr {
+macro_rules! module_to_addr {
     ($mod:ident) => (&$mod as *const _ as *const u16)
 }
 
@@ -19,7 +20,7 @@ macro_rules! to_module_addr {
 ///Underhood it uses flags `GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT`
 ///Due to that produced HMODULE must not be passed to `FreeLibrary`
 ///
-///Use macro `to_module_addr!` to convert function into module address.
+///Use macro `module_to_addr!` to convert local function into module address.
 pub fn get_module_handle_from_addr(module_addr: LPCWSTR) -> io::Result<HMODULE> {
     //GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT
     const FLAGS: DWORD = 0x00000004 | 0x00000002;
