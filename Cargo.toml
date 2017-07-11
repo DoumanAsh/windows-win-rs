@@ -1,12 +1,12 @@
 [package]
 name = "windows-win"
-version = "2.0.0"
+version = "2.0.1"
 authors = ["Douman <douman@gmx.se>"]
 description = "Some windows hacking library with utilities to find windows and access them"
 license = "MIT"
 
 repository = "https://github.com/DoumanAsh/windows-win-rs"
-documentation = "https://docs.rs/windows-win/*/x86_64-pc-windows-msvc/windows_win/"
+documentation = "https://docs.rs/windows-win/*/x86_64-pc-windows-gnu/windows_win/"
 
 keywords = ["Windows", "winapi"]
 categories = []
@@ -19,7 +19,7 @@ user32-sys = "^0.2.0"
 kernel32-sys = "^0.2.1"
 
 [badges]
-appveyor = { repository = "https://github.com/DoumanAsh/windows-win-rs", branch = "master", service = "github" }
+appveyor = { repository = "DoumanAsh/windows-win-rs"}
 
 [package.metadata.docs.rs]
 default-target = "x86_64-pc-windows-msvc"
