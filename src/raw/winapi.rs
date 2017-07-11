@@ -44,6 +44,7 @@ pub use self::winapi::basetsd::{
 
 pub use self::winapi::winnt::{
     LPWSTR,
+    LPCWSTR,
     FILE_ATTRIBUTE_DIRECTORY,
     FILE_ATTRIBUTE_READONLY,
     MEMORY_BASIC_INFORMATION,
@@ -59,7 +60,8 @@ pub use self::winapi::minwindef::{
     UINT,
     MAX_PATH,
     HINSTANCE,
-    DWORD
+    DWORD,
+    HMODULE
 };
 
 //WinAPI constants
@@ -110,7 +112,9 @@ pub use self::kernel32::{
     FindClose,
     GetProcessId,
     VirtualQueryEx,
-    TerminateProcess
+    TerminateProcess,
+    GetModuleHandleExW,
+    GetModuleFileNameW
 };
 
 

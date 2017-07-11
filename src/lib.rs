@@ -23,6 +23,7 @@ pub mod raw {
     pub use inner_raw::message;
     pub use inner_raw::file;
     pub use inner_raw::memory;
+    pub use inner_raw::module;
 }
 
 use os::windows::raw::HANDLE;
