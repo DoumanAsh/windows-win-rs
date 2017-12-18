@@ -1,5 +1,6 @@
 //! Provides functions to interact with memory.
 
+use ::fmt;
 use ::ptr;
 use ::io;
 use ::mem;
@@ -8,7 +9,6 @@ use self::raw::winapi::*;
 
 use ::utils;
 
-#[derive(Debug)]
 ///Convenient wrapper over [MEMORY_BASIC_INFORMATION](https://msdn.microsoft.com/en-us/library/windows/desktop/aa366775(v=vs.85).aspx)
 pub struct Info(pub MEMORY_BASIC_INFORMATION);
 
@@ -57,6 +57,13 @@ impl Info {
     ///This space is not backed by actual physical storage.
     pub fn is_reserved(&self) -> bool {
         self.0.State == MEM_RESERVE
+    }
+}
+
+impl fmt::Debug for Info {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Info {{ BaseAddress={:p}, AllocationBase={:p}, AllocationProtect={}, RegionSize={}, State={}, Protect={}, Type={} }}",
+                   self.0.BaseAddress, self.0.AllocationBase, self.0.AllocationProtect, self.0.RegionSize, self.0.State, self.0.Protect, self.0.Type)
     }
 }
 

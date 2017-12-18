@@ -11,6 +11,7 @@ use std::io;
 use std::ptr;
 use std::ffi;
 use std::convert;
+use std::fmt;
 
 #[path="raw/mod.rs"]
 mod inner_raw;
@@ -26,8 +27,8 @@ pub mod raw {
     pub use inner_raw::module;
 }
 
-use os::windows::raw::HANDLE;
 use inner_raw::winapi::{
+    HANDLE,
     HWND,
     UINT,
     WPARAM,

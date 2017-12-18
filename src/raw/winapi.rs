@@ -1,31 +1,25 @@
 extern crate winapi;
-extern crate user32;
-extern crate kernel32;
 
-pub use os::raw::{
+pub use self::winapi::ctypes::{
     c_uint,
     c_int,
     c_ulong,
     c_void
 };
 
-pub use os::windows::raw::HANDLE;
-
 //WinAPI types
-pub use self::winapi::windef::{
+pub use self::winapi::shared::windef::{
     HWND,
     HMENU
 };
 
-pub use self::winapi::winerror::{
+pub use self::winapi::shared::winerror::{
     ERROR_NO_MORE_FILES
 };
 
-pub use self::winapi::shlobj::{
-    INVALID_HANDLE_VALUE
-};
+pub use self::winapi::um::handleapi::INVALID_HANDLE_VALUE;
 
-pub use self::winapi::minwinbase::{
+pub use self::winapi::um::minwinbase::{
     WIN32_FIND_DATAW,
     FINDEX_INFO_LEVELS,
     FindExInfoStandard,
@@ -36,15 +30,19 @@ pub use self::winapi::minwinbase::{
     FINDEX_SEARCH_OPS
 };
 
-pub use self::winapi::basetsd::{
+pub use self::winapi::shared::basetsd::{
     ULONG_PTR,
     PDWORD_PTR,
     SIZE_T
 };
 
-pub use self::winapi::winnt::{
+pub use self::winapi::shared::ntdef::{
     LPWSTR,
     LPCWSTR,
+    HANDLE
+};
+
+pub use self::winapi::um::winnt::{
     FILE_ATTRIBUTE_DIRECTORY,
     FILE_ATTRIBUTE_READONLY,
     MEMORY_BASIC_INFORMATION,
@@ -53,7 +51,7 @@ pub use self::winapi::winnt::{
     MEM_RESERVE
 };
 
-pub use self::winapi::minwindef::{
+pub use self::winapi::shared::minwindef::{
     LPARAM,
     WPARAM,
     LRESULT,
@@ -65,7 +63,7 @@ pub use self::winapi::minwindef::{
 };
 
 //WinAPI constants
-pub use self::winapi::winuser::{
+pub use self::winapi::um::winuser::{
     LPMSG,
     SMTO_BLOCK,
     WM_SYSCOMMAND,
@@ -79,7 +77,7 @@ pub use self::winapi::winuser::{
 };
 
 //WinAPI functions
-pub use self::user32::{
+pub use self::winapi::um::winuser::{
     FindWindowW,
     FindWindowExW,
     IsWindowVisible,
@@ -99,22 +97,41 @@ pub use self::user32::{
     DestroyWindow
 };
 
-pub use self::kernel32::{
+pub use self::winapi::um::processthreadsapi::{
     OpenProcess,
-    CloseHandle,
-    ReadProcessMemory,
-    WriteProcessMemory,
-    QueryFullProcessImageNameW,
     GetCurrentProcess,
+    GetProcessId,
+    TerminateProcess,
+};
+
+pub use self::winapi::um::handleapi::{
+    CloseHandle
+};
+
+pub use self::winapi::um::memoryapi::{
+    ReadProcessMemory,
+    WriteProcessMemory
+};
+
+pub use self::winapi::um::winbase::{
+    QueryFullProcessImageNameW
+};
+
+pub use self::winapi::um::wincon::{
     GetConsoleWindow,
+};
+
+pub use self::winapi::um::fileapi::{
     FindFirstFileExW,
     FindNextFileW,
     FindClose,
-    GetProcessId,
+};
+
+pub use self::winapi::um::memoryapi::{
     VirtualQueryEx,
-    TerminateProcess,
+};
+
+pub use self::winapi::um::libloaderapi::{
     GetModuleHandleExW,
     GetModuleFileNameW
 };
-
-

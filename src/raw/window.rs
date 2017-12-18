@@ -79,7 +79,7 @@ pub fn get_text(window: HWND) -> io::Result<String> {
 }
 
 unsafe extern "system" fn callback_enum_windows<T: FnMut(HWND)>(window: HWND, param: LPARAM) -> i32 {
-    let mut func = &mut *(param as *mut T);
+    let func = &mut *(param as *mut T);
 
     func(window);
 
@@ -87,7 +87,7 @@ unsafe extern "system" fn callback_enum_windows<T: FnMut(HWND)>(window: HWND, pa
 }
 
 unsafe extern "system" fn callback_enum_windows_until<T: FnMut(HWND) -> i32>(window: HWND, param: LPARAM) -> i32 {
-    let mut func = &mut *(param as *mut T);
+    let func = &mut *(param as *mut T);
 
     func(window)
 }

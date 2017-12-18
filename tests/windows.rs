@@ -1,6 +1,10 @@
 extern crate windows_win;
 extern crate clipboard_win;
-extern crate user32;
+extern crate winapi;
+
+use winapi::um::winuser::{
+    AddClipboardFormatListener
+};
 
 use clipboard_win::{
     set_clipboard_string
@@ -151,7 +155,7 @@ fn test_window_create() {
     assert!(window.is_ok());
     let window = window.unwrap();
 
-    unsafe { user32::AddClipboardFormatListener(window.inner()); }
+    unsafe { AddClipboardFormatListener(window.inner()); }
 
     assert!(set_clipboard_string("Test").is_ok());
     let msg = windows_win::Messages::new().window(Some(window.inner())).next();
