@@ -25,6 +25,7 @@ pub mod raw {
     pub use inner_raw::file;
     pub use inner_raw::memory;
     pub use inner_raw::module;
+    pub use inner_raw::timer;
 }
 
 use inner_raw::winapi::{
@@ -35,7 +36,10 @@ use inner_raw::winapi::{
     LPARAM,
     LRESULT,
     MSG,
-    c_uint
+    c_uint,
+    c_ulong,
+    c_void,
+    c_uchar,
 };
 
 ///Windows process representation
@@ -447,5 +451,105 @@ impl convert::Into<HWND> for Window {
 impl Drop for Window {
     fn drop(&mut self) {
         raw::window::destroy(self.inner);
+    }
+}
+
+enum TimerCallbackType {
+    None,
+    Raw(raw::timer::CallbackType, *mut c_void),
+}
+
+enum TimeoutType {
+    None,
+    Single(c_ulong),
+    Interval(c_ulong)
+}
+
+impl TimeoutType {
+    fn into_raw(self) -> (c_ulong, c_ulong) {
+        match self {
+            TimeoutType::None => (0, 0),
+            TimeoutType::Single(delay) => (delay, 0),
+            TimeoutType::Interval(interval) => (0, interval),
+        }
+    }
+}
+
+unsafe extern "system" fn timer_rust_callback(param: *mut c_void, _: c_uchar) {
+    if !param.is_null() {
+        let cb: fn() -> () = mem::transmute(param);
+        cb();
+    }
+}
+
+///WinAPI timer builder
+pub struct TimerBuilder<'a> {
+    queue: Option<&'a raw::timer::TimerQueue>,
+    callback: TimerCallbackType,
+    timeout: TimeoutType,
+    flags: raw::timer::TimerFlags
+}
+
+impl<'a> TimerBuilder<'a> {
+    ///Creates new instance
+    pub fn new() -> Self {
+        Self {
+            queue: None,
+            callback: TimerCallbackType::None,
+            timeout: TimeoutType::None,
+            flags: raw::timer::DEFAULT_TIMER_FLAGS
+        }
+    }
+
+    ///Sets raw C function as callback
+    pub fn raw_callback(mut self, cb: raw::timer::CallbackType, param: Option<*mut c_void>) -> Self {
+        self.callback = TimerCallbackType::Raw(cb, param.unwrap_or(ptr::null_mut()));
+        self
+    }
+
+    ///Sets Rust function pointer as callback
+    pub fn rust_callback(mut self, cb: fn() -> ()) -> Self {
+        self.callback = TimerCallbackType::Raw(Some(timer_rust_callback), unsafe { mem::transmute(cb) });
+        self
+    }
+
+    ///Sets timer queue
+    pub fn queue(mut self, queue: &'a raw::timer::TimerQueue) -> Self {
+        self.queue = Some(queue);
+        self
+    }
+
+    ///Makes timer to fire single time after delay in milliseconds.
+    pub fn single(mut self, delay: c_ulong) -> Self {
+        self.timeout = TimeoutType::Single(delay);
+        self
+    }
+
+    ///Makes timer to fire with interval in milliseconds.
+    pub fn interval(mut self, interval: c_ulong) -> Self {
+        self.timeout = TimeoutType::Interval(interval);
+        self
+    }
+
+    ///Specifies timer flags.
+    ///
+    ///Default is `raw::timer::DEFAULT_TIMER_FLAGS`.
+    pub fn flags(mut self, flags: raw::timer::TimerFlags) -> Self {
+        self.flags = flags;
+        self
+    }
+
+    ///Creates timer.
+    pub fn build(self) -> io::Result<raw::timer::QueueTimer> {
+        static DEFAULT: raw::timer::TimerQueue = raw::timer::DEFAULT_TIMER_QUEUE;
+
+        let queue = self.queue.unwrap_or(&DEFAULT);
+        let (delay, period) = self.timeout.into_raw();
+        let (cb, param) = match self.callback {
+            TimerCallbackType::None => (None, ptr::null_mut()),
+            TimerCallbackType::Raw(cb, param) => (cb, param),
+        };
+
+        queue.timer(cb, param, delay, period, self.flags)
     }
 }

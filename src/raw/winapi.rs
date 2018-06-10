@@ -4,7 +4,8 @@ pub use self::winapi::ctypes::{
     c_uint,
     c_int,
     c_ulong,
-    c_void
+    c_void,
+    c_uchar
 };
 
 //WinAPI types
@@ -48,7 +49,14 @@ pub use self::winapi::um::winnt::{
     MEMORY_BASIC_INFORMATION,
     MEM_COMMIT,
     MEM_FREE,
-    MEM_RESERVE
+    MEM_RESERVE,
+    LARGE_INTEGER,
+    WT_EXECUTEINTIMERTHREAD,
+    WT_EXECUTEINPERSISTENTTHREAD,
+    WT_EXECUTELONGFUNCTION,
+    WT_EXECUTEONLYONCE,
+    WT_TRANSFER_IMPERSONATION,
+    WAITORTIMERCALLBACK
 };
 
 pub use self::winapi::shared::minwindef::{
@@ -134,4 +142,16 @@ pub use self::winapi::um::memoryapi::{
 pub use self::winapi::um::libloaderapi::{
     GetModuleHandleExW,
     GetModuleFileNameW
+};
+
+pub use self::winapi::um::profileapi::{
+    QueryPerformanceFrequency,
+    QueryPerformanceCounter
+};
+
+pub use self::winapi::um::threadpoollegacyapiset::{
+    CreateTimerQueue,
+    DeleteTimerQueueEx,
+    CreateTimerQueueTimer,
+    DeleteTimerQueueTimer,
 };
