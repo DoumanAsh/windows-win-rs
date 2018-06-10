@@ -239,14 +239,21 @@ impl QueueTimer {
         unsafe { DeleteTimerQueueTimer(self.queue, self.inner, T::handle()) }
     }
 
+    ///Cancels timer without dropping it
+    ///
+    ///User must ensure that drop is not called by forgetting timer
+    pub unsafe fn cancel<T: CompleteEvent>(&self, _event: T) -> io::Result<()> {
+        match self.inner_delete::<T>() {
+            0 => Err(utils::get_last_error()),
+            _ => Ok(())
+        }
+    }
+
     ///Deletes queue and consumes it.
     ///
     ///Note that it invalidates all timers produced by it.
-    pub fn delete<T: CompleteEvent>(self, _event: T) -> io::Result<()> {
-        let result = match self.inner_delete::<T>() {
-            0 => Err(utils::get_last_error()),
-            _ => Ok(())
-        };
+    pub fn delete<T: CompleteEvent>(self, event: T) -> io::Result<()> {
+        let result = unsafe { self.cancel(event) };
 
         mem::forget(self);
         result
