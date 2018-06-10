@@ -8,6 +8,7 @@ use self::raw::winapi::{
     CreateTimerQueueTimer,
     DeleteTimerQueueEx,
     DeleteTimerQueueTimer,
+    ChangeTimerQueueTimer,
     HANDLE,
     INVALID_HANDLE_VALUE,
     WT_EXECUTEINTIMERTHREAD,
@@ -239,7 +240,7 @@ impl QueueTimer {
         unsafe { DeleteTimerQueueTimer(self.queue, self.inner, T::handle()) }
     }
 
-    ///Cancels timer without dropping it
+    ///Cancels timer without consuming it
     ///
     ///User must ensure that drop is not called by forgetting timer
     pub unsafe fn cancel<T: CompleteEvent>(&self, _event: T) -> io::Result<()> {
@@ -249,9 +250,18 @@ impl QueueTimer {
         }
     }
 
-    ///Deletes queue and consumes it.
+    ///Resets timer with new values of due_time and period
     ///
-    ///Note that it invalidates all timers produced by it.
+    ///Note: if you call it on a one-shot timer (its period is zero) that has already expired, the timer is not
+    ///updated.
+    pub fn reset(&self, due_time: c_ulong, period: c_ulong) -> io::Result<()> {
+        match unsafe { ChangeTimerQueueTimer(self.queue, self.inner, due_time, period) } {
+            0 => Err(utils::get_last_error()),
+            _ => Ok(())
+        }
+    }
+
+    ///Deletes timer and consumes it.
     pub fn delete<T: CompleteEvent>(self, event: T) -> io::Result<()> {
         let result = unsafe { self.cancel(event) };
 

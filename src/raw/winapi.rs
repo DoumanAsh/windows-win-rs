@@ -154,4 +154,5 @@ pub use self::winapi::um::threadpoollegacyapiset::{
     DeleteTimerQueueEx,
     CreateTimerQueueTimer,
     DeleteTimerQueueTimer,
+    ChangeTimerQueueTimer,
 };

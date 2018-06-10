@@ -462,7 +462,8 @@ enum TimerCallbackType {
 enum TimeoutType {
     None,
     Single(c_ulong),
-    Interval(c_ulong)
+    Interval(c_ulong),
+    Both(c_ulong, c_ulong)
 }
 
 impl TimeoutType {
@@ -471,6 +472,7 @@ impl TimeoutType {
             TimeoutType::None => (0, 0),
             TimeoutType::Single(delay) => (delay, 0),
             TimeoutType::Interval(interval) => (0, interval),
+            TimeoutType::Both(delay, interval) => (delay, interval),
         }
     }
 }
@@ -483,6 +485,19 @@ unsafe extern "system" fn timer_rust_callback(param: *mut c_void, _: c_uchar) {
 }
 
 ///WinAPI timer builder
+///
+///The same timer can act as one-shot timer and/or interval timer.
+///
+///## Configuration
+///
+///When `single` method is called timer is configured as one-shot.
+///
+///When `interval` method is called timer is configured as interval.
+///
+///When both of the above  are called timer is configured as one-shot, after which it starts
+///to run in interval.
+///
+///By default timer starts as one-shot with timeout 0.
 pub struct TimerBuilder<'a> {
     queue: Option<&'a raw::timer::TimerQueue>,
     callback: TimerCallbackType,
@@ -513,7 +528,9 @@ impl<'a> TimerBuilder<'a> {
         self
     }
 
-    ///Sets timer queue
+    ///Sets timer queue.
+    ///
+    ///If not set, default shall be used.
     pub fn queue(mut self, queue: &'a raw::timer::TimerQueue) -> Self {
         self.queue = Some(queue);
         self
@@ -521,13 +538,19 @@ impl<'a> TimerBuilder<'a> {
 
     ///Makes timer to fire single time after delay in milliseconds.
     pub fn single(mut self, delay: c_ulong) -> Self {
-        self.timeout = TimeoutType::Single(delay);
+        self.timeout = match self.timeout {
+            TimeoutType::Interval(interval) => TimeoutType::Both(delay, interval),
+            _ => TimeoutType::Single(delay)
+        };
         self
     }
 
     ///Makes timer to fire with interval in milliseconds.
     pub fn interval(mut self, interval: c_ulong) -> Self {
-        self.timeout = TimeoutType::Interval(interval);
+        self.timeout = match self.timeout {
+            TimeoutType::Single(delay) => TimeoutType::Both(delay, interval),
+            _ => TimeoutType::Interval(interval)
+        };
         self
     }
 
