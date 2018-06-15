@@ -40,6 +40,8 @@ use inner_raw::winapi::{
     c_ulong,
     c_void,
     c_uchar,
+    SW_SHOW,
+    SW_HIDE
 };
 
 ///Windows process representation
@@ -363,6 +365,22 @@ impl Window {
         let result = self.inner;
         mem::forget(self);
         result
+    }
+
+    #[inline]
+    ///Shows window.
+    ///
+    ///Returns true if previously it wasn't visible
+    pub fn show(&self) -> bool {
+        raw::window::show(self.inner, SW_SHOW) == false
+    }
+
+    #[inline]
+    ///Hide window.
+    ///
+    ///Returns true if previously it was visible
+    pub fn hide(&self) -> bool {
+        raw::window::show(self.inner, SW_HIDE) == true
     }
 
     #[inline]

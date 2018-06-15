@@ -81,7 +81,9 @@ pub use self::winapi::um::winuser::{
     CW_USEDEFAULT,
     CREATESTRUCTW,
     HWND_MESSAGE,
-    MSG
+    MSG,
+    SW_SHOW,
+    SW_HIDE
 };
 
 //WinAPI functions
@@ -102,7 +104,8 @@ pub use self::winapi::um::winuser::{
     PeekMessageW,
     GetActiveWindow,
     CreateWindowExW,
-    DestroyWindow
+    DestroyWindow,
+    ShowWindow
 };
 
 pub use self::winapi::um::processthreadsapi::{

@@ -622,6 +622,18 @@ impl Builder {
     }
 }
 
+///Shows window
+///
+///[See](https://msdn.microsoft.com/en-us/library/windows/desktop/ms633548(v=vs.85).aspx) possible commands
+///
+///If the window was previously visible, the return value is `true`.
+///If the window was previously hidden, the return value is `false`.
+pub fn show(window: HWND, cmd: c_int) -> bool {
+    unsafe {
+        ShowWindow(window, cmd) != 0
+    }
+}
+
 ///Destroy window.
 ///
 ///`WM_DESTROY` and `WM_NCDESTROY` are sent after.
