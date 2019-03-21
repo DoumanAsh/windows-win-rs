@@ -7,11 +7,14 @@
 #![warn(missing_docs)]
 #![cfg_attr(feature = "cargo-clippy", allow(clippy::style))]
 
+pub extern crate winapi;
+
 use std::{io, ptr, ffi, mem, convert};
 
 #[path="raw/mod.rs"]
 mod inner_raw;
 pub mod utils;
+pub mod ui;
 
 pub mod raw {
     //! Provides direct bindings to WinAPI functions of crate.
