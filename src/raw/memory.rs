@@ -1,13 +1,13 @@
 //! Provides functions to interact with memory.
 
-use ::fmt;
-use ::ptr;
-use ::io;
-use ::mem;
-use ::inner_raw as raw;
+use std::fmt;
+use std::ptr;
+use std::io;
+use std::mem;
+use crate::inner_raw as raw;
 use self::raw::winapi::*;
 
-use ::utils;
+use crate::utils;
 
 ///Convenient wrapper over [MEMORY_BASIC_INFORMATION](https://msdn.microsoft.com/en-us/library/windows/desktop/aa366775(v=vs.85).aspx)
 pub struct Info(pub MEMORY_BASIC_INFORMATION);

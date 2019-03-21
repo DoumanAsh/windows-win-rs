@@ -4,28 +4,24 @@
 //! Some windows hacking library with utilities to find windows and access them.
 //!
 
-use std::default;
-use std::mem;
-use std::os;
-use std::io;
-use std::ptr;
-use std::ffi;
-use std::convert;
-use std::fmt;
+#![warn(missing_docs)]
+#![cfg_attr(feature = "cargo-clippy", allow(clippy::style))]
+
+use std::{io, ptr, ffi, mem, convert};
 
 #[path="raw/mod.rs"]
 mod inner_raw;
-mod utils;
+pub mod utils;
 
 pub mod raw {
     //! Provides direct bindings to WinAPI functions of crate.
-    pub use inner_raw::process;
-    pub use inner_raw::window;
-    pub use inner_raw::message;
-    pub use inner_raw::file;
-    pub use inner_raw::memory;
-    pub use inner_raw::module;
-    pub use inner_raw::timer;
+    pub use super::inner_raw::process;
+    pub use super::inner_raw::window;
+    pub use super::inner_raw::message;
+    pub use super::inner_raw::file;
+    pub use super::inner_raw::memory;
+    pub use super::inner_raw::module;
+    pub use super::inner_raw::timer;
 }
 
 use inner_raw::winapi::{
@@ -191,6 +187,7 @@ pub struct Msg {
 }
 
 impl Msg {
+    ///Creates new instance by taking raw `MSG`
     pub fn new(message: MSG) -> Msg {
         Msg {
             inner: message

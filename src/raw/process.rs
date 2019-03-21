@@ -1,11 +1,11 @@
 //! Provides functions to interact with processes.
 
-use ::io;
-use ::ptr;
-use ::inner_raw as raw;
+use std::io;
+use std::ptr;
+use crate::inner_raw as raw;
 use self::raw::winapi::*;
 
-use ::utils;
+use crate::utils;
 
 ///Opens process by pid.
 ///
@@ -134,6 +134,7 @@ pub fn get_exe_path(process: HANDLE) -> io::Result<String> {
 }
 
 #[inline]
+///Retrieves process ID of Handle.
 pub fn get_id(process: HANDLE) -> c_ulong {
     unsafe { GetProcessId(process) }
 }

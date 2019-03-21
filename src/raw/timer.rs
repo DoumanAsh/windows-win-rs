@@ -1,5 +1,5 @@
 //! Windows timers API
-use ::inner_raw as raw;
+use crate::inner_raw as raw;
 use self::raw::winapi::{
     QueryPerformanceFrequency,
     QueryPerformanceCounter,
@@ -22,11 +22,11 @@ use self::raw::winapi::{
     c_void,
 };
 
-use ::ptr;
-use ::mem;
-use ::io;
+use std::ptr;
+use std::mem;
+use std::io;
 
-use ::utils;
+use crate::utils;
 
 ///Retrieves the frequency of the performance counter.
 ///
@@ -58,6 +58,7 @@ pub fn query_performance_counter() -> io::Result<i64> {
 
 ///Describes how to delete timer/queue
 pub trait CompleteEvent {
+    #[doc(hidden)]
     fn handle() -> HANDLE;
 }
 

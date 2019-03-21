@@ -1,13 +1,13 @@
 //! Provides functions to interact with windows.
 
-use ::io;
-use ::os::windows::ffi::OsStrExt;
-use ::ptr;
-use ::ffi;
+use std::io;
+use std::os::windows::ffi::OsStrExt;
+use std::ptr;
+use std::ffi;
 
-use ::inner_raw as raw;
+use crate::inner_raw as raw;
 use self::raw::winapi::*;
-use ::utils;
+use crate::utils;
 
 ///Determines if window is visible.
 ///

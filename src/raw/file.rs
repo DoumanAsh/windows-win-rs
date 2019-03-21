@@ -1,19 +1,19 @@
 //! Provides File Management functions
 
-use ::ffi;
-use ::os::windows::ffi::{
+use std::ffi;
+use std::os::windows::ffi::{
     OsStrExt,
     OsStringExt
 };
-use ::default;
-use ::ptr;
-use ::mem;
-use ::convert;
-use ::io;
-use ::inner_raw as raw;
+use std::default;
+use std::ptr;
+use std::mem;
+use std::convert;
+use std::io;
+use crate::inner_raw as raw;
 use self::raw::winapi::*;
 
-use ::utils;
+use crate::utils;
 
 const NO_MORE_FILES: i32 = ERROR_NO_MORE_FILES as i32;
 
@@ -87,6 +87,7 @@ impl Entry {
         ((self.0.nFileSizeHigh as u64) << 32) | (self.0.nFileSizeLow as u64)
     }
 
+    ///Returns whether Entry is read-only
     pub fn is_read_only(&self) -> bool {
         (self.0.dwFileAttributes & FILE_ATTRIBUTE_READONLY) != 0
     }

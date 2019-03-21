@@ -1,12 +1,12 @@
 //! Provides functions to handle windows messages.
 
-use ::io;
-use ::ptr;
-use ::mem;
+use std::io;
+use std::ptr;
+use std::mem;
 
-use ::inner_raw as raw;
+use crate::inner_raw as raw;
 use self::raw::winapi::*;
-use ::utils;
+use crate::utils;
 
 ///Retrieves a message from the calling thread's message queue. A blocking call.
 ///

@@ -1,12 +1,13 @@
 [package]
 name = "windows-win"
-version = "2.3.0"
+version = "2.4.0"
 authors = ["Douman <douman@gmx.se>"]
 description = "Some windows hacking library with utilities to find windows and access them"
 license = "MIT"
+edition = "2018"
 
 repository = "https://github.com/DoumanAsh/windows-win-rs"
-documentation = "https://docs.rs/windows-win/2.3.0/x86_64-pc-windows-msvc/windows_win/"
+documentation = "https://docs.rs/windows-win/*/x86_64-pc-windows-msvc/windows_win"
 
 keywords = ["Windows", "winapi"]
 categories = []

@@ -1,6 +1,4 @@
-extern crate winapi;
-
-pub use self::winapi::ctypes::{
+pub use winapi::ctypes::{
     c_uint,
     c_int,
     c_ulong,
@@ -9,18 +7,18 @@ pub use self::winapi::ctypes::{
 };
 
 //WinAPI types
-pub use self::winapi::shared::windef::{
+pub use winapi::shared::windef::{
     HWND,
     HMENU
 };
 
-pub use self::winapi::shared::winerror::{
+pub use winapi::shared::winerror::{
     ERROR_NO_MORE_FILES
 };
 
-pub use self::winapi::um::handleapi::INVALID_HANDLE_VALUE;
+pub use winapi::um::handleapi::INVALID_HANDLE_VALUE;
 
-pub use self::winapi::um::minwinbase::{
+pub use winapi::um::minwinbase::{
     WIN32_FIND_DATAW,
     FINDEX_INFO_LEVELS,
     FindExInfoStandard,
@@ -31,19 +29,19 @@ pub use self::winapi::um::minwinbase::{
     FINDEX_SEARCH_OPS
 };
 
-pub use self::winapi::shared::basetsd::{
+pub use winapi::shared::basetsd::{
     ULONG_PTR,
     PDWORD_PTR,
     SIZE_T
 };
 
-pub use self::winapi::shared::ntdef::{
+pub use winapi::shared::ntdef::{
     LPWSTR,
     LPCWSTR,
     HANDLE
 };
 
-pub use self::winapi::um::winnt::{
+pub use winapi::um::winnt::{
     FILE_ATTRIBUTE_DIRECTORY,
     FILE_ATTRIBUTE_READONLY,
     MEMORY_BASIC_INFORMATION,
@@ -59,7 +57,7 @@ pub use self::winapi::um::winnt::{
     WAITORTIMERCALLBACK
 };
 
-pub use self::winapi::shared::minwindef::{
+pub use winapi::shared::minwindef::{
     LPARAM,
     WPARAM,
     LRESULT,
@@ -71,7 +69,7 @@ pub use self::winapi::shared::minwindef::{
 };
 
 //WinAPI constants
-pub use self::winapi::um::winuser::{
+pub use winapi::um::winuser::{
     LPMSG,
     SMTO_BLOCK,
     WM_SYSCOMMAND,
@@ -87,7 +85,7 @@ pub use self::winapi::um::winuser::{
 };
 
 //WinAPI functions
-pub use self::winapi::um::winuser::{
+pub use winapi::um::winuser::{
     FindWindowW,
     FindWindowExW,
     IsWindowVisible,
@@ -108,51 +106,51 @@ pub use self::winapi::um::winuser::{
     ShowWindow
 };
 
-pub use self::winapi::um::processthreadsapi::{
+pub use winapi::um::processthreadsapi::{
     OpenProcess,
     GetCurrentProcess,
     GetProcessId,
     TerminateProcess,
 };
 
-pub use self::winapi::um::handleapi::{
+pub use winapi::um::handleapi::{
     CloseHandle
 };
 
-pub use self::winapi::um::memoryapi::{
+pub use winapi::um::memoryapi::{
     ReadProcessMemory,
     WriteProcessMemory
 };
 
-pub use self::winapi::um::winbase::{
+pub use winapi::um::winbase::{
     QueryFullProcessImageNameW
 };
 
-pub use self::winapi::um::wincon::{
+pub use winapi::um::wincon::{
     GetConsoleWindow,
 };
 
-pub use self::winapi::um::fileapi::{
+pub use winapi::um::fileapi::{
     FindFirstFileExW,
     FindNextFileW,
     FindClose,
 };
 
-pub use self::winapi::um::memoryapi::{
+pub use winapi::um::memoryapi::{
     VirtualQueryEx,
 };
 
-pub use self::winapi::um::libloaderapi::{
+pub use winapi::um::libloaderapi::{
     GetModuleHandleExW,
     GetModuleFileNameW
 };
 
-pub use self::winapi::um::profileapi::{
+pub use winapi::um::profileapi::{
     QueryPerformanceFrequency,
     QueryPerformanceCounter
 };
 
-pub use self::winapi::um::threadpoollegacyapiset::{
+pub use winapi::um::threadpoollegacyapiset::{
     CreateTimerQueue,
     DeleteTimerQueueEx,
     CreateTimerQueueTimer,

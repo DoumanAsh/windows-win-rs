@@ -1,11 +1,11 @@
 //! Provides functions to interact with modules.
 
-use ::io;
-use ::ptr;
-use ::inner_raw as raw;
+use std::io;
+use std::ptr;
+use crate::inner_raw as raw;
 use self::raw::winapi::*;
 
-use ::utils;
+use crate::utils;
 
 #[macro_export]
 ///Converts ident to module address.
