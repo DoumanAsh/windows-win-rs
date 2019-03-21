@@ -66,8 +66,8 @@ pub struct MessageBox {
 
 impl MessageBox {
     ///Creates new instance with provided text message.
-    pub fn new<T: AsRef<ffi::OsStr>>(text: T) -> Self {
-        let mut text: Vec<u16> = text.as_ref().encode_wide().collect();
+    pub fn new(text: &ffi::OsStr) -> Self {
+        let mut text: Vec<u16> = text.encode_wide().collect();
         text.push(0);
 
         Self {
@@ -76,6 +76,22 @@ impl MessageBox {
             caption: None,
             flags: winapi::um::winuser::MB_OK,
         }
+    }
+
+    #[inline]
+    ///Creates informational message box with Ok button
+    pub fn info<T: AsRef<ffi::OsStr>>(text: T) -> Self {
+        let mut res = Self::new(text.as_ref());
+        res.flags |= winapi::um::winuser::MB_ICONINFORMATION;
+        res
+    }
+
+    #[inline]
+    ///Creates error message box with Ok button
+    pub fn error<T: AsRef<ffi::OsStr>>(text: T) -> Self {
+        let mut res = Self::new(text.as_ref());
+        res.flags |= winapi::um::winuser::MB_ICONERROR;
+        res
     }
 
     ///Sets parent's window handle.
