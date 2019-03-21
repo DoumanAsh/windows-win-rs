@@ -10,6 +10,34 @@ use std::os::raw::{c_int, c_uint};
 
 use crate::utils;
 
+///Re-export WinAPI flags for `MessageBox`
+pub mod flags {
+    pub use winapi::um::winuser::{
+        //Buttons
+        MB_ABORTRETRYIGNORE,
+        MB_CANCELTRYCONTINUE,
+        MB_HELP,
+        MB_OK,
+        MB_OKCANCEL,
+        MB_RETRYCANCEL,
+        MB_YESNO,
+        MB_YESNOCANCEL,
+        //Icons
+        MB_ICONEXCLAMATION,
+        MB_ICONWARNING,
+        MB_ICONINFORMATION,
+        MB_ICONASTERISK,
+        MB_ICONQUESTION,
+        MB_ICONSTOP,
+        MB_ICONERROR,
+        MB_ICONHAND,
+        //Modiality
+        MB_APPLMODAL,
+        MB_SYSTEMMODAL,
+        MB_TASKMODAL,
+    };
+}
+
 #[derive(Debug, PartialEq, Eq)]
 ///Result of user's interaction with message box
 pub enum MsgBoxResult {
@@ -38,15 +66,15 @@ pub enum MsgBoxResult {
 impl From<c_int> for MsgBoxResult {
     fn from(value: c_int) -> MsgBoxResult {
         match value {
-            3 => MsgBoxResult::Abort,
-            2 => MsgBoxResult::Cancel,
-            11 => MsgBoxResult::Continue,
-            5 => MsgBoxResult::Ignore,
-            7 => MsgBoxResult::No,
             1 => MsgBoxResult::Ok,
+            2 => MsgBoxResult::Cancel,
+            3 => MsgBoxResult::Abort,
             4 => MsgBoxResult::Retry,
-            10 => MsgBoxResult::TryAgain,
+            5 => MsgBoxResult::Ignore,
             6 => MsgBoxResult::Yes,
+            7 => MsgBoxResult::No,
+            10 => MsgBoxResult::TryAgain,
+            11 => MsgBoxResult::Continue,
             value => MsgBoxResult::Ext(value),
         }
     }
@@ -66,6 +94,8 @@ pub struct MessageBox {
 
 impl MessageBox {
     ///Creates new instance with provided text message.
+    ///
+    ///For multi-line text messages, just use \n
     pub fn new(text: &ffi::OsStr) -> Self {
         let mut text: Vec<u16> = text.encode_wide().collect();
         text.push(0);
@@ -109,6 +139,19 @@ impl MessageBox {
     ///Adds flags to existing ones.
     pub fn flags(&mut self, flags: c_uint) -> &mut Self {
         self.flags |= flags;
+        self
+    }
+
+    ///Sets new text of message box
+    pub fn text<T: AsRef<ffi::OsStr>>(&mut self, text: T) -> &mut Self {
+        let text = text.as_ref();
+
+        self.text.truncate(0);
+        for ch in text.encode_wide() {
+            self.text.push(ch);
+        }
+        self.text.push(0);
+
         self
     }
 
