@@ -2,6 +2,8 @@
 
 use std::io;
 use std::ptr;
+use std::mem;
+use std::ffi::c_void;
 use crate::inner_raw as raw;
 use self::raw::winapi::*;
 
@@ -162,4 +164,40 @@ pub fn terminate(process: HANDLE, code: c_uint) -> io::Result<()> {
     else {
         Err(utils::get_last_error())
     }
+}
+
+///Checks whether current process is evaluated.
+pub fn is_self_evaluated() -> bool {
+    is_evaluated(unsafe { GetCurrentProcess() })
+}
+
+///Determines whether the current process is evaluated.
+///
+///# Parameters
+///
+///* ```process``` - Pointer to a opened process.
+pub fn is_evaluated(process: HANDLE) -> bool {
+    let mut token: HANDLE = ptr::null_mut();
+
+    unsafe {
+        if OpenProcessToken(process, TOKEN_QUERY, &mut token as *mut HANDLE) == 0 {
+            //Most likely no access rights
+            return false;
+        }
+    }
+
+    let mut evalutation: TOKEN_ELEVATION = unsafe { mem::zeroed() };
+    let eval_ptr = &mut evalutation as *mut TOKEN_ELEVATION as *mut c_void;
+    let mut len = mem::size_of::<TOKEN_ELEVATION>() as DWORD;
+
+    let result = match unsafe { GetTokenInformation(token, TokenElevation, eval_ptr, len, &mut len as *mut _) } {
+        0 => false,
+        _ => evalutation.TokenIsElevated != 0,
+    };
+
+    unsafe {
+        CloseHandle(token);
+    }
+
+    result
 }

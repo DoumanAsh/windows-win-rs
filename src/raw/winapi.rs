@@ -54,7 +54,10 @@ pub use winapi::um::winnt::{
     WT_EXECUTELONGFUNCTION,
     WT_EXECUTEONLYONCE,
     WT_TRANSFER_IMPERSONATION,
-    WAITORTIMERCALLBACK
+    WAITORTIMERCALLBACK,
+    TOKEN_QUERY,
+    TOKEN_ELEVATION,
+    TokenElevation,
 };
 
 pub use winapi::shared::minwindef::{
@@ -111,6 +114,11 @@ pub use winapi::um::processthreadsapi::{
     GetCurrentProcess,
     GetProcessId,
     TerminateProcess,
+    OpenProcessToken,
+};
+
+pub use winapi::um::securitybaseapi::{
+    GetTokenInformation,
 };
 
 pub use winapi::um::handleapi::{

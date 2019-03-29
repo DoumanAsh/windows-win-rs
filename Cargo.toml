@@ -35,7 +35,8 @@ features = [
     "memoryapi",
     "libloaderapi",
     "profileapi",
-    "threadpoollegacyapiset"
+    "threadpoollegacyapiset",
+    "securitybaseapi",
 ]
 
 [badges]
