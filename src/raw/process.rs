@@ -166,17 +166,17 @@ pub fn terminate(process: HANDLE, code: c_uint) -> io::Result<()> {
     }
 }
 
-///Checks whether current process is evaluated.
-pub fn is_self_evaluated() -> bool {
-    is_evaluated(unsafe { GetCurrentProcess() })
+///Checks whether current process is elevated.
+pub fn is_self_elevated() -> bool {
+    is_elevated(unsafe { GetCurrentProcess() })
 }
 
-///Determines whether the current process is evaluated.
+///Determines whether the current process is elevated.
 ///
 ///# Parameters
 ///
 ///* ```process``` - Pointer to a opened process.
-pub fn is_evaluated(process: HANDLE) -> bool {
+pub fn is_elevated(process: HANDLE) -> bool {
     let mut token: HANDLE = ptr::null_mut();
 
     unsafe {
