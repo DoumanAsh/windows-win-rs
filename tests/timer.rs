@@ -58,20 +58,20 @@ fn rust_callback() {
 fn test_timer_builder() {
     let timer = TimerBuilder::new().rust_callback(rust_callback).single(1).interval(900).build().expect("To build timer");
     assert_eq!(RUST_CB_COUNT.load(atomic::Ordering::Relaxed), 0);
-    sleep(10);
+    sleep(100);
     assert_eq!(RUST_CB_COUNT.load(atomic::Ordering::Relaxed), 1);
     timer.delete(timer::Wait).expect("To delete timer");
 
     let timer = TimerBuilder::new().rust_callback(rust_callback).single(900).interval(900).build().expect("To build timer");
-    sleep(10);
+    sleep(100);
     assert_eq!(RUST_CB_COUNT.load(atomic::Ordering::Relaxed), 1);
     timer.reset(5, 0).expect("To reset");
-    sleep(10);
+    sleep(100);
     assert_eq!(RUST_CB_COUNT.load(atomic::Ordering::Relaxed), 2);
     timer.delete(timer::Wait).expect("To delete timer");
 
-    let timer = TimerBuilder::new().rust_callback(rust_callback).single(0).interval(6).build().expect("To build timer");
-    sleep(10);
+    let timer = TimerBuilder::new().rust_callback(rust_callback).single(0).interval(60).build().expect("To build timer");
+    sleep(100);
     assert_eq!(RUST_CB_COUNT.load(atomic::Ordering::Relaxed), 4);
     timer.delete(timer::Wait).expect("To delete timer");
 
