@@ -2,9 +2,7 @@ extern crate windows_win;
 extern crate clipboard_win;
 extern crate winapi;
 
-use winapi::um::winuser::{
-    AddClipboardFormatListener
-};
+use winapi::um::winuser::{AddClipboardFormatListener, SetLastErrorEx};
 
 use clipboard_win::{
     set_clipboard_string
@@ -60,6 +58,7 @@ fn test_interact_notepad() {
     test_open_close(notepad.id());
     test_query_process_exe(notepad.id());
     test_get_windows_by_title(notepad.id());
+    test_get_window_by_pid_after_error(notepad.id());
     test_window_set_text_message(notepad.id());
     //This test should be last as it closes notepad
     test_window_sys_command_close(notepad.id());
@@ -112,6 +111,12 @@ fn test_get_windows_by_title(notepad_id: u32) {
     let result = result.unwrap();
 
     assert_eq!(notepad_orig_title, result);
+}
+
+fn test_get_window_by_pid_after_error(notepad_id: u32) {
+    unsafe { SetLastErrorEx(5, 0) };
+    let notepad_window = get_by_pid(notepad_id);
+    assert!(notepad_window.is_ok());
 }
 
 fn test_window_set_text_message(notepad_id: u32) {
