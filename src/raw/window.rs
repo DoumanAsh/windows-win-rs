@@ -149,6 +149,7 @@ pub fn enum_by_until<T: FnMut(HWND) -> i32>(parent: Option<HWND>, mut cmp_func: 
 
     let result: i32;
 
+    //Necessary if we want to guarantee that we can correctly detect interrupt of enumeration.
     unsafe { SetLastErrorEx(0, 0) };
     if let Some(parent_window) = parent {
         result = unsafe { EnumChildWindows(parent_window, Some(callback_enum_windows_until::<T>), lparam) };
