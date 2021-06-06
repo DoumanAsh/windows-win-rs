@@ -5,6 +5,8 @@ use std::os::windows::ffi::OsStrExt;
 use std::ptr;
 use std::ffi;
 
+use winapi::um::winuser::SetLastErrorEx;
+
 use crate::inner_raw as raw;
 use self::raw::winapi::*;
 use crate::utils;
@@ -140,7 +142,8 @@ pub fn enum_by_until<T: FnMut(HWND) -> i32>(parent: Option<HWND>, mut cmp_func: 
     let lparam = &mut cmp_func as *mut _ as LPARAM;
 
     let result: i32;
-
+    
+    unsafe { SetLastErrorEx(0, 0) };
     if let Some(parent_window) = parent {
         result = unsafe { EnumChildWindows(parent_window, Some(callback_enum_windows_until::<T>), lparam) };
     }
