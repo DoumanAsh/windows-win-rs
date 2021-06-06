@@ -110,7 +110,6 @@ pub fn enum_by<T: FnMut(HWND)>(parent: Option<HWND>, mut cmp_func: T) -> io::Res
 
     let result: i32;
 
-    unsafe { SetLastErrorEx(0, 0) };
     if let Some(parent_window) = parent {
         result = unsafe { EnumChildWindows(parent_window, Some(callback_enum_windows::<T>), lparam) };
     }
