@@ -181,3 +181,16 @@ fn test_window_create_dummy() {
     let window = window.unwrap();
     assert!(destroy(window));
 }
+
+#[test]
+fn check_enum_by_with_last_error_will_not_fail() {
+    unsafe {
+        SetLastErrorEx(1, 0)
+    }
+
+    let result = windows_win::raw::window::enum_by_until(None, |_| {
+        1
+    });
+
+    assert!(result.is_ok());
+}
