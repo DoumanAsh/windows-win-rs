@@ -129,6 +129,12 @@ pub fn enum_by<T: FnMut(HWND)>(parent: Option<HWND>, mut cmp_func: T) -> io::Res
 ///# Note
 /// Enumeration continues until callback return non-zero value.
 ///
+///# WinAPI error
+///
+///Due to `enum_by_until` allowing to interrupt enumeration, having error set
+///cause inability detect accurately whether enumeration failed or has been interrupted.
+///Hence this function always set last error to `0`.
+///
 ///# Parameters
 ///
 ///* ```parent``` - Handle of parent window to look up through its children only. Optional.
@@ -142,7 +148,7 @@ pub fn enum_by_until<T: FnMut(HWND) -> i32>(parent: Option<HWND>, mut cmp_func: 
     let lparam = &mut cmp_func as *mut _ as LPARAM;
 
     let result: i32;
-    
+
     unsafe { SetLastErrorEx(0, 0) };
     if let Some(parent_window) = parent {
         result = unsafe { EnumChildWindows(parent_window, Some(callback_enum_windows_until::<T>), lparam) };
@@ -166,7 +172,7 @@ pub fn enum_by_until<T: FnMut(HWND) -> i32>(parent: Option<HWND>, mut cmp_func: 
     Ok(())
 }
 
-///Retrieves handle to a window by pid.
+///Retrieves handle to a window by pid using `enum_by_until`.
 ///
 ///# Parameters
 ///
