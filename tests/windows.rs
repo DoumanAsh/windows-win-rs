@@ -189,6 +189,12 @@ fn check_enum_by_with_last_error_will_not_fail() {
     }
 
     let result = windows_win::raw::window::enum_by_until(None, |_| {
+        0
+    });
+
+    assert!(result.is_ok());
+
+    let result = windows_win::raw::window::enum_by_until(None, |_| {
         1
     });
 
