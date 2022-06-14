@@ -39,9 +39,6 @@ features = [
     "securitybaseapi",
 ]
 
-[badges]
-appveyor = { repository = "DoumanAsh/windows-win-rs"}
-
 [package.metadata.docs.rs]
 default-target = "x86_64-pc-windows-msvc"
 
