@@ -3,8 +3,8 @@ name = "windows-win"
 version = "3.0.0"
 authors = ["Douman <douman@gmx.se>"]
 description = "Some windows hacking library with utilities to find windows and access them"
-license = "MIT"
 edition = "2018"
+license = "BSL-1.0"
 
 repository = "https://github.com/DoumanAsh/windows-win-rs"
 documentation = "https://docs.rs/windows-win/*/x86_64-pc-windows-msvc/windows_win"
