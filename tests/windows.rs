@@ -1,16 +1,8 @@
-extern crate windows_win;
-extern crate clipboard_win;
-extern crate winapi;
+use windows_win::sys::{AddClipboardFormatListener, SetLastErrorEx};
 
-use winapi::um::winuser::{AddClipboardFormatListener, SetLastErrorEx};
+use clipboard_win::set_clipboard_string;
 
-use clipboard_win::{
-    set_clipboard_string
-};
-
-use windows_win::{
-    Window
-};
+use windows_win::Window;
 
 use windows_win::raw::window::{
     get_by_class,

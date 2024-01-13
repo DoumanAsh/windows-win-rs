@@ -5,16 +5,21 @@
 //!
 
 #![warn(missing_docs)]
+#![cfg_attr(feature = "cargo-clippy", allow(clippy::not_unsafe_ptr_arg_deref))]
 #![cfg_attr(feature = "cargo-clippy", allow(clippy::style))]
+#![cfg_attr(feature = "cargo-clippy", allow(clippy::derivable_impls))]
 
-pub extern crate winapi;
+pub mod sys;
 
-use std::{io, ptr, ffi, mem, convert};
+use std::ffi;
+use core::{ptr, mem, convert};
 
 #[path="raw/mod.rs"]
 mod inner_raw;
 pub mod utils;
 pub mod ui;
+
+pub use utils::{ErrorCode, Result};
 
 pub mod raw {
     //! Provides direct bindings to WinAPI functions of crate.
@@ -27,7 +32,7 @@ pub mod raw {
     pub use super::inner_raw::timer;
 }
 
-use inner_raw::winapi::{
+use sys::{
     HANDLE,
     HWND,
     UINT,
@@ -65,7 +70,7 @@ impl Process {
     ///
     ///* ```Ok``` - Process struct.
     ///* ```Err``` - Error reason.
-    pub fn open(pid: u32, access_rights: u32) -> io::Result<Process> {
+    pub fn open(pid: u32, access_rights: u32) -> utils::Result<Process> {
         match raw::process::open(pid, access_rights) {
             Ok(handle) => Ok(Process {
                 pid: pid,
@@ -110,7 +115,7 @@ impl Process {
     ///
     ///* ```Ok``` - Success.
     ///* ```Err``` - Error reason.
-    pub fn exe_path(&self) -> io::Result<String> {
+    pub fn exe_path(&self) -> Result<String> {
         raw::process::get_exe_path(self.inner)
     }
 
@@ -120,7 +125,7 @@ impl Process {
     ///# Note
     ///
     ///It can return ```None``` if process hasn't created window.
-    pub fn window(&self) -> io::Result<Option<HWND>> {
+    pub fn window(&self) -> Result<Option<HWND>> {
         raw::window::get_by_pid(self.pid)
     }
 
@@ -131,7 +136,7 @@ impl Process {
     ///
     ///* ```base_addr``` - Address from where to start reading.
     ///* ```storage``` - Storage to hold memory. Its `len` determines amount of bytes to read.
-    pub fn read_memory(&self, base_addr: usize, storage: &mut [u8]) -> io::Result<()> {
+    pub fn read_memory(&self, base_addr: usize, storage: &mut [u8]) -> Result<()> {
         raw::process::read_memory(self.inner, base_addr, storage)
     }
 
@@ -147,7 +152,7 @@ impl Process {
     ///
     ///* ```Ok``` - Success.
     ///* ```Err``` - Error reason.
-    pub fn write_memory(&self, base_addr: usize, data: &[u8]) -> io::Result<()> {
+    pub fn write_memory(&self, base_addr: usize, data: &[u8]) -> Result<()> {
         raw::process::write_memory(self.inner, base_addr, data)
     }
 
@@ -168,7 +173,7 @@ impl Process {
     ///Forces termination of process and consumes itself.
     ///
     ///For details see [raw::process::terminate()](raw/process/fn.terminate.html).
-    pub fn terminate(self, exit_code: c_uint) -> io::Result<()> {
+    pub fn terminate(self, exit_code: c_uint) -> Result<()> {
         raw::process::terminate(self.inner, exit_code).map(|_| {
             let _ = self.into_inner();
         })
@@ -308,7 +313,7 @@ impl Messages {
 }
 
 impl Iterator for Messages {
-    type Item = io::Result<Msg>;
+    type Item = Result<Msg>;
 
     ///Retrieves next message in queue.
     ///
@@ -347,7 +352,7 @@ impl Window {
 
     #[inline]
     ///Creates window from instance of window builder.
-    pub fn from_builder(builder: &mut raw::window::Builder) -> io::Result<Self> {
+    pub fn from_builder(builder: &mut raw::window::Builder) -> Result<Self> {
         builder.create().map(|win| Window::from_hwnd(win))
     }
 
@@ -372,7 +377,7 @@ impl Window {
     ///
     ///Returns true if previously it wasn't visible
     pub fn show(&self) -> bool {
-        raw::window::show(self.inner, SW_SHOW) == false
+        !raw::window::show(self.inner, SW_SHOW)
     }
 
     #[inline]
@@ -380,7 +385,7 @@ impl Window {
     ///
     ///Returns true if previously it was visible
     pub fn hide(&self) -> bool {
-        raw::window::show(self.inner, SW_HIDE) == true
+        raw::window::show(self.inner, SW_HIDE)
     }
 
     #[inline]
@@ -391,13 +396,13 @@ impl Window {
 
     #[inline]
     ///Retrieves window's class.
-    pub fn class(&self) -> io::Result<String> {
+    pub fn class(&self) -> Result<String> {
         raw::window::get_class(self.inner)
     }
 
     #[inline]
     ///Retrieves window's title.
-    pub fn title(&self) -> io::Result<String> {
+    pub fn title(&self) -> Result<String> {
         raw::window::get_text(self.inner)
     }
 
@@ -411,7 +416,7 @@ impl Window {
     ///Sends message to underlying window.
     ///
     ///For more information refer to [send_message()](raw/window/fn.send_message.html)
-    pub fn send_message(&self, msg_type: UINT, w_param: WPARAM, l_param: LPARAM, timeout: Option<UINT>) -> io::Result<LRESULT> {
+    pub fn send_message(&self, msg_type: UINT, w_param: WPARAM, l_param: LPARAM, timeout: Option<UINT>) -> Result<LRESULT> {
         raw::window::send_message(self.inner, msg_type, w_param, l_param, timeout)
     }
 
@@ -419,7 +424,7 @@ impl Window {
     ///Sends `BM_CLICK` message to underlying window.
     ///
     ///For mores information refer to [send_push_button()](raw/window/fn.send_push_button.html)
-    pub fn send_push_button(&self, timeout: Option<UINT>) -> io::Result<LRESULT> {
+    pub fn send_push_button(&self, timeout: Option<UINT>) -> Result<LRESULT> {
         raw::window::send_push_button(self.inner, timeout)
     }
 
@@ -542,7 +547,7 @@ impl<'a> TimerBuilder<'a> {
 
     ///Sets Rust function pointer as callback
     pub fn rust_callback(mut self, cb: fn() -> ()) -> Self {
-        self.callback = TimerCallbackType::Raw(Some(timer_rust_callback), unsafe { mem::transmute(cb) });
+        self.callback = TimerCallbackType::Raw(Some(timer_rust_callback), cb as _ );
         self
     }
 
@@ -581,7 +586,7 @@ impl<'a> TimerBuilder<'a> {
     }
 
     ///Creates timer.
-    pub fn build(self) -> io::Result<raw::timer::QueueTimer> {
+    pub fn build(self) -> Result<raw::timer::QueueTimer> {
         static DEFAULT: raw::timer::TimerQueue = raw::timer::DEFAULT_TIMER_QUEUE;
 
         let queue = self.queue.unwrap_or(&DEFAULT);

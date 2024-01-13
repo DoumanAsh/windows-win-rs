@@ -1,18 +1,18 @@
 //! Message boxes APIs
 
-use winapi::shared::windef::HWND;
+use crate::sys::{HWND, MessageBoxW};
+use crate::utils::Result;
 
 use std::os::windows::ffi::OsStrExt;
 use std::ffi;
 use std::ptr;
-use std::io;
 use std::os::raw::{c_int, c_uint};
 
 use crate::utils;
 
 ///Re-export WinAPI flags for `MessageBox`
 pub mod flags {
-    pub use winapi::um::winuser::{
+    pub use crate::sys::{
         //Buttons
         MB_ABORTRETRYIGNORE,
         MB_CANCELTRYCONTINUE,
@@ -84,7 +84,7 @@ impl From<c_int> for MsgBoxResult {
 ///
 ///If title is not specified, then Default is `Error`
 ///
-///The default type is `winapi::um::winuser::MB_OK`
+///The default type is `flags::MB_OK`
 pub struct MessageBox {
     parent: HWND,
     text: Vec<u16>,
@@ -104,7 +104,7 @@ impl MessageBox {
             parent: ptr::null_mut(),
             text,
             caption: None,
-            flags: winapi::um::winuser::MB_OK,
+            flags: flags::MB_OK,
         }
     }
 
@@ -112,7 +112,7 @@ impl MessageBox {
     ///Creates informational message box with Ok button
     pub fn info<T: AsRef<ffi::OsStr>>(text: T) -> Self {
         let mut res = Self::new(text.as_ref());
-        res.flags |= winapi::um::winuser::MB_ICONINFORMATION;
+        res.flags |= flags::MB_ICONINFORMATION;
         res
     }
 
@@ -120,7 +120,7 @@ impl MessageBox {
     ///Creates error message box with Ok button
     pub fn error<T: AsRef<ffi::OsStr>>(text: T) -> Self {
         let mut res = Self::new(text.as_ref());
-        res.flags |= winapi::um::winuser::MB_ICONERROR;
+        res.flags |= flags::MB_ICONERROR;
         res
     }
 
@@ -179,10 +179,10 @@ impl MessageBox {
     }
 
     ///Shows message box and returns once user closes it
-    pub fn show(&self) -> io::Result<MsgBoxResult> {
+    pub fn show(&self) -> Result<MsgBoxResult> {
         let caption = self.caption.as_ref().map(|caption| caption.as_ptr()).unwrap_or_else(|| ptr::null());
 
-        match unsafe { winapi::um::winuser::MessageBoxW(self.parent, self.text.as_ptr(), caption, self.flags) } {
+        match unsafe { MessageBoxW(self.parent, self.text.as_ptr(), caption, self.flags) } {
             0 => Err(utils::get_last_error()),
             n => Ok(MsgBoxResult::from(n)),
         }

@@ -1,12 +1,6 @@
-extern crate windows_win;
-extern crate winapi;
-
-use self::windows_win::TimerBuilder;
-use self::windows_win::raw::timer;
-use self::winapi::ctypes::{
-    c_void,
-    c_uchar,
-};
+use windows_win::TimerBuilder;
+use windows_win::raw::timer;
+use windows_win::sys::{c_void, c_uchar};
 
 use std::ptr;
 use std::sync::atomic;

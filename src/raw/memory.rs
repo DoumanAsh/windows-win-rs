@@ -1,13 +1,9 @@
 //! Provides functions to interact with memory.
 
-use std::fmt;
-use std::ptr;
-use std::io;
-use std::mem;
-use crate::inner_raw as raw;
-use self::raw::winapi::*;
+use core::{fmt, ptr, mem};
 
-use crate::utils;
+use crate::sys::*;
+use crate::utils::{self, Result};
 
 ///Convenient wrapper over [MEMORY_BASIC_INFORMATION](https://msdn.microsoft.com/en-us/library/windows/desktop/aa366775(v=vs.85).aspx)
 pub struct Info(pub MEMORY_BASIC_INFORMATION);
@@ -81,7 +77,7 @@ impl Virtual {
     ///It is assumed that handle is valid, if it is not then nothing can be retrieved.
     pub fn new(handle: HANDLE) -> Self {
         Virtual {
-            handle: handle,
+            handle,
             addr: ptr::null()
         }
     }
@@ -92,7 +88,7 @@ impl Iterator for Virtual {
 
     fn next(&mut self) -> Option<Self::Item> {
         virtual_query_ex(self.handle, self.addr as *const c_void).ok().map(|info| {
-            self.addr = unsafe { self.addr.offset(info.size() as isize) };
+            self.addr = unsafe { self.addr.add(info.size()) };
             info
         })
     }
@@ -108,7 +104,7 @@ impl Iterator for Virtual {
 ///# Note:
 ///
 ///When using this function on process of different bitness it might not work correctly.
-pub fn virtual_query_ex(handle: HANDLE, base: *const c_void) -> io::Result<Info> {
+pub fn virtual_query_ex(handle: HANDLE, base: *const c_void) -> Result<Info> {
     let mut info: MEMORY_BASIC_INFORMATION = unsafe { mem::zeroed() };
 
     if unsafe { VirtualQueryEx(handle, base, &mut info as *mut _, mem::size_of_val(&info) as SIZE_T) } != 0 {

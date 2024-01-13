@@ -1,6 +1,6 @@
 [package]
 name = "windows-win"
-version = "2.4.1"
+version = "3.0.0"
 authors = ["Douman <douman@gmx.se>"]
 description = "Some windows hacking library with utilities to find windows and access them"
 license = "MIT"
@@ -14,33 +14,11 @@ categories = []
 
 readme = "README.md"
 
-[target.'cfg(windows)'.dependencies.winapi]
-version = "0.3"
-default-features = false
-features = [
-    "std",
-    "windef",
-    "winerror",
-    "handleapi",
-    "basetsd",
-    "winnt",
-    "minwindef",
-    "winuser",
-    "processthreadsapi",
-    "handleapi",
-    "memoryapi",
-    "winbase",
-    "wincon",
-    "fileapi",
-    "memoryapi",
-    "libloaderapi",
-    "profileapi",
-    "threadpoollegacyapiset",
-    "securitybaseapi",
-]
+[dependencies.error-code]
+version = "3"
 
 [package.metadata.docs.rs]
 default-target = "x86_64-pc-windows-msvc"
 
 [target.'cfg(windows)'.dev-dependencies]
-clipboard-win = "^2"
+clipboard-win = "5"

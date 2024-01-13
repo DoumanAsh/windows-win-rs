@@ -1,13 +1,10 @@
 //! Provides functions to interact with processes.
 
-use std::io;
-use std::ptr;
-use std::mem;
-use std::ffi::c_void;
-use crate::inner_raw as raw;
-use self::raw::winapi::*;
+use core::{ptr, mem};
+use core::ffi::c_void;
 
-use crate::utils;
+use crate::sys::*;
+use crate::utils::{self, Result};
 
 ///Opens process by pid.
 ///
@@ -24,7 +21,7 @@ use crate::utils;
 ///
 ///* ```Ok``` - Handle to opened process.
 ///* ```Err``` - Error reason.
-pub fn open(pid: u32, access_rights: u32) -> io::Result<HANDLE> {
+pub fn open(pid: u32, access_rights: u32) -> Result<HANDLE> {
     let result = unsafe {OpenProcess(access_rights, 0, pid) };
 
     if result.is_null() {
@@ -44,7 +41,7 @@ pub fn open(pid: u32, access_rights: u32) -> io::Result<HANDLE> {
 ///
 ///* ```Ok``` - Success.
 ///* ```Err``` - Error reason.
-pub fn close(process: HANDLE) -> io::Result<()> {
+pub fn close(process: HANDLE) -> Result<()> {
     let result = unsafe {CloseHandle(process) };
 
     if result == 0 {
@@ -66,7 +63,7 @@ pub fn close(process: HANDLE) -> io::Result<()> {
 ///
 ///* ```Ok``` - Vector with data.
 ///* ```Err``` - Error reason.
-pub fn read_memory(process: HANDLE, base_addr: usize, storage: &mut [u8]) -> io::Result<()> {
+pub fn read_memory(process: HANDLE, base_addr: usize, storage: &mut [u8]) -> Result<()> {
     let read_size = storage.len();
     let ret_val = unsafe {ReadProcessMemory(process,
                                             base_addr as *const c_void,
@@ -94,7 +91,7 @@ pub fn read_memory(process: HANDLE, base_addr: usize, storage: &mut [u8]) -> io:
 ///
 ///* ```Ok``` - Success.
 ///* ```Err``` - Error reason.
-pub fn write_memory(process: HANDLE, base_addr: usize, data: &[u8]) -> io::Result<()> {
+pub fn write_memory(process: HANDLE, base_addr: usize, data: &[u8]) -> Result<()> {
     let ret_val = unsafe {WriteProcessMemory(process,
                                              base_addr as *mut c_void,
                                              data.as_ptr() as *const c_void,
@@ -121,7 +118,7 @@ pub fn write_memory(process: HANDLE, base_addr: usize, data: &[u8]) -> io::Resul
 ///
 ///* ```Ok``` - Success.
 ///* ```Err``` - Error reason.
-pub fn get_exe_path(process: HANDLE) -> io::Result<String> {
+pub fn get_exe_path(process: HANDLE) -> Result<String> {
     let mut buf_len = MAX_PATH as u32;
     let mut result: Vec<u16> = vec![0; buf_len as usize];
     let text_ptr = result.as_mut_ptr() as LPWSTR;
@@ -157,7 +154,7 @@ pub fn get_current_handle() -> HANDLE {
 ///# Note:
 ///
 ///It prevents process from running any clean-up.
-pub fn terminate(process: HANDLE, code: c_uint) -> io::Result<()> {
+pub fn terminate(process: HANDLE, code: c_uint) -> Result<()> {
     if unsafe { TerminateProcess(process, code) } != 0 {
         Ok(())
     }
@@ -190,7 +187,7 @@ pub fn is_elevated(process: HANDLE) -> bool {
     let eval_ptr = &mut evalutation as *mut TOKEN_ELEVATION as *mut c_void;
     let mut len = mem::size_of::<TOKEN_ELEVATION>() as DWORD;
 
-    let result = match unsafe { GetTokenInformation(token, TokenElevation, eval_ptr, len, &mut len as *mut _) } {
+    let result = match unsafe { GetTokenInformation(token, TOKEN_INFORMATION_CLASS::TokenElevation, eval_ptr, len, &mut len as *mut _) } {
         0 => false,
         _ => evalutation.TokenIsElevated != 0,
     };

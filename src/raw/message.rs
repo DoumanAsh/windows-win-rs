@@ -1,12 +1,9 @@
 //! Provides functions to handle windows messages.
 
-use std::io;
-use std::ptr;
-use std::mem;
+use core::{mem, ptr};
 
-use crate::inner_raw as raw;
-use self::raw::winapi::*;
-use crate::utils;
+use crate::sys::*;
+use crate::utils::{self, Result};
 
 ///Retrieves a message from the calling thread's message queue. A blocking call.
 ///
@@ -20,7 +17,7 @@ use crate::utils;
 ///
 ///* ```Ok``` - Successfully retrieved message..
 ///* ```Err``` - Impossible to retrieve message.
-pub fn get(window: Option<HWND>, range_low: Option<UINT>, range_high: Option<UINT>) -> io::Result<MSG> {
+pub fn get(window: Option<HWND>, range_low: Option<UINT>, range_high: Option<UINT>) -> Result<MSG> {
     let mut msg: MSG = unsafe { mem::zeroed() };
 
     let result = unsafe { GetMessageW(&mut msg as LPMSG,
@@ -53,7 +50,7 @@ pub fn get(window: Option<HWND>, range_low: Option<UINT>, range_high: Option<UIN
 ///
 ///* ```Ok``` - Successfully retrieved message..
 ///* ```Err``` - Impossible to retrieve message.
-pub fn peek(window: Option<HWND>, range_low: Option<UINT>, range_high: Option<UINT>, handle_type: Option<UINT>) -> io::Result<Option<MSG>> {
+pub fn peek(window: Option<HWND>, range_low: Option<UINT>, range_high: Option<UINT>, handle_type: Option<UINT>) -> Result<Option<MSG>> {
     let mut msg: MSG = unsafe { mem::zeroed() };
 
     let result = unsafe { PeekMessageW(&mut msg as LPMSG,

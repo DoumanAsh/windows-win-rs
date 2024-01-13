@@ -1,6 +1,5 @@
 //! Windows timers API
-use crate::inner_raw as raw;
-use self::raw::winapi::{
+use crate::sys::{
     QueryPerformanceFrequency,
     QueryPerformanceCounter,
     LARGE_INTEGER,
@@ -21,37 +20,34 @@ use self::raw::winapi::{
     c_ulong,
     c_void,
 };
+use crate::utils::{self, Result};
 
-use std::ptr;
-use std::mem;
-use std::io;
-
-use crate::utils;
+use core::{ptr, mem};
 
 ///Retrieves the frequency of the performance counter.
 ///
 ///The frequency of the performance counter is fixed at system boot and is consistent across all processors.
 ///Therefore, the frequency need only be queried upon application initialization, and the result can be cached.
-pub fn query_performance_frequency() -> io::Result<i64> {
+pub fn query_performance_frequency() -> Result<i64> {
     let mut counter: LARGE_INTEGER = unsafe { mem::zeroed() };
 
     unsafe {
         match QueryPerformanceFrequency(&mut counter as *mut _) {
             0 => Err(utils::get_last_error()),
-            _ => Ok(counter.QuadPart().clone())
+            _ => Ok(counter.QuadPart)
         }
     }
 }
 
 ///Retrieves the current value of the performance counter, which is a high resolution (<1us) time
 ///stamp that can be used for time-interval measurements.
-pub fn query_performance_counter() -> io::Result<i64> {
+pub fn query_performance_counter() -> Result<i64> {
     let mut counter: LARGE_INTEGER = unsafe { mem::zeroed() };
 
     unsafe {
         match QueryPerformanceCounter(&mut counter as *mut _) {
             0 => Err(utils::get_last_error()),
-            _ => Ok(counter.QuadPart().clone())
+            _ => Ok(counter.QuadPart)
         }
     }
 }
@@ -153,7 +149,7 @@ pub struct TimerQueue {
 
 impl TimerQueue {
     ///Creates new instance of queue
-    pub fn new() -> io::Result<Self> {
+    pub fn new() -> Result<Self> {
         let handle = unsafe { CreateTimerQueue() };
 
         match handle.is_null() {
@@ -173,7 +169,7 @@ impl TimerQueue {
     ///Deletes queue and consumes it.
     ///
     ///Note that it invalidates all timers produced by it.
-    pub fn delete<T: CompleteEvent>(self, _event: T) -> io::Result<()> {
+    pub fn delete<T: CompleteEvent>(self, _event: T) -> Result<()> {
         let result = match self.inner_delete::<T>() {
             0 => Err(utils::get_last_error()),
             _ => Ok(())
@@ -192,7 +188,7 @@ impl TimerQueue {
     ///- `due_time` - The amount of time in milliseconds relative to the current time that must elapse before the timer is signaled for the first time.
     ///- `period` - The period of the timer, in milliseconds. If this parameter is zero, the timer is signaled once. If this parameter is greater than zero, the timer is periodic. A periodic timer automatically reactivates each time the period elapses, until the timer is canceled.
     ///- `flags` - Timer flags
-    pub fn timer(&self, cb: WAITORTIMERCALLBACK, param: *mut c_void, due_time: c_ulong, period: c_ulong, flags: TimerFlags) -> io::Result<QueueTimer> {
+    pub fn timer(&self, cb: WAITORTIMERCALLBACK, param: *mut c_void, due_time: c_ulong, period: c_ulong, flags: TimerFlags) -> Result<QueueTimer> {
         let mut timer: *mut c_void = ptr::null_mut();
 
         match unsafe { CreateTimerQueueTimer(&mut timer as *mut _, self.handle, cb, param, due_time, period, flags.inner) } {
@@ -244,7 +240,7 @@ impl QueueTimer {
     ///Cancels timer without consuming it
     ///
     ///User must ensure that drop is not called by forgetting timer
-    pub unsafe fn cancel<T: CompleteEvent>(&self, _event: T) -> io::Result<()> {
+    pub unsafe fn cancel<T: CompleteEvent>(&self, _event: T) -> Result<()> {
         match self.inner_delete::<T>() {
             0 => Err(utils::get_last_error()),
             _ => Ok(())
@@ -255,7 +251,7 @@ impl QueueTimer {
     ///
     ///Note: if you call it on a one-shot timer (its period is zero) that has already expired, the timer is not
     ///updated.
-    pub fn reset(&self, due_time: c_ulong, period: c_ulong) -> io::Result<()> {
+    pub fn reset(&self, due_time: c_ulong, period: c_ulong) -> Result<()> {
         match unsafe { ChangeTimerQueueTimer(self.queue, self.inner, due_time, period) } {
             0 => Err(utils::get_last_error()),
             _ => Ok(())
@@ -263,7 +259,7 @@ impl QueueTimer {
     }
 
     ///Deletes timer and consumes it.
-    pub fn delete<T: CompleteEvent>(self, event: T) -> io::Result<()> {
+    pub fn delete<T: CompleteEvent>(self, event: T) -> Result<()> {
         let result = unsafe { self.cancel(event) };
 
         mem::forget(self);

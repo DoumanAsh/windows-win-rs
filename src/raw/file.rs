@@ -5,15 +5,10 @@ use std::os::windows::ffi::{
     OsStrExt,
     OsStringExt
 };
-use std::default;
-use std::ptr;
-use std::mem;
-use std::convert;
-use std::io;
-use crate::inner_raw as raw;
-use self::raw::winapi::*;
+use core::{default, ptr, mem, convert};
 
-use crate::utils;
+use crate::sys::*;
+use crate::utils::{self, Result};
 
 const NO_MORE_FILES: i32 = ERROR_NO_MORE_FILES as i32;
 
@@ -108,7 +103,7 @@ impl Search {
     ///Creates new instance of Search.
     ///
     ///Due to the way how underlying WinAPI works first entry is also returned alongside it.
-    pub fn new<T: ?Sized + AsRef<ffi::OsStr>>(name: &T, level: FileInfoLevel, typ: FileSearchType, flags: DWORD) -> io::Result<(Search, Entry)> {
+    pub fn new<T: ?Sized + AsRef<ffi::OsStr>>(name: &T, level: FileInfoLevel, typ: FileSearchType, flags: DWORD) -> Result<(Search, Entry)> {
         let mut utf16_buff: Vec<u16> = name.as_ref().encode_wide().collect();
         utf16_buff.push(0);
 
@@ -132,7 +127,7 @@ impl Search {
     }
 
     ///Attempts to search again.
-    pub fn again(&self) -> io::Result<Entry> {
+    pub fn again(&self) -> Result<Entry> {
         let mut file_data: WIN32_FIND_DATAW = unsafe { mem::zeroed() };
 
         unsafe {
@@ -147,19 +142,21 @@ impl Search {
 
     ///Closes search.
     pub fn close(self) {
-        drop(self.0);
+        unsafe {
+            FindClose(self.0);
+        }
     }
 }
 
 impl Iterator for Search {
-    type Item = io::Result<Entry>;
+    type Item = Result<Entry>;
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.again() {
             Ok(data) => Some(Ok(data)),
             Err(error) => {
-                match error.raw_os_error() {
-                    Some(NO_MORE_FILES) => None,
+                match error.raw_code() {
+                    NO_MORE_FILES => None,
                     _ => Some(Err(error))
                 }
             }

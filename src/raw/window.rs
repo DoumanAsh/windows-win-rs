@@ -1,15 +1,13 @@
 //! Provides functions to interact with windows.
 
-use std::io;
-use std::os::windows::ffi::OsStrExt;
-use std::ptr;
 use std::ffi;
+use std::os::windows::ffi::OsStrExt;
+use core::ptr;
 
-use winapi::um::winuser::SetLastErrorEx;
+use crate::sys::SetLastErrorEx;
 
-use crate::inner_raw as raw;
-use self::raw::winapi::*;
-use crate::utils;
+use crate::sys::*;
+use crate::utils::{self, Result};
 
 ///Determines if window is visible.
 ///
@@ -40,7 +38,7 @@ pub fn is_visible(window: HWND) -> bool {
 ///
 ///* ```Ok``` - Contains name of class.
 ///* ```Err``` - Error reason.
-pub fn get_class(window: HWND) -> io::Result<String> {
+pub fn get_class(window: HWND) -> Result<String> {
     const BUF_SIZE: usize = 512;
     let mut buff: [u16; BUF_SIZE] = [0; BUF_SIZE];
 
@@ -65,7 +63,7 @@ pub fn get_class(window: HWND) -> io::Result<String> {
 ///
 ///* ```Ok``` - Contains name of class.
 ///* ```Err``` - Error reason.
-pub fn get_text(window: HWND) -> io::Result<String> {
+pub fn get_text(window: HWND) -> Result<String> {
     const BUF_SIZE: usize = 512;
     let mut buff: [u16; BUF_SIZE] = [0; BUF_SIZE];
 
@@ -105,7 +103,7 @@ unsafe extern "system" fn callback_enum_windows_until<T: FnMut(HWND) -> i32>(win
 ///
 ///* ```Ok``` - Success.
 ///* ```Err``` - Error reason.
-pub fn enum_by<T: FnMut(HWND)>(parent: Option<HWND>, mut cmp_func: T) -> io::Result<()> {
+pub fn enum_by<T: FnMut(HWND)>(parent: Option<HWND>, mut cmp_func: T) -> Result<()> {
     let lparam = &mut cmp_func as *mut _ as LPARAM;
 
     let result: i32;
@@ -144,7 +142,7 @@ pub fn enum_by<T: FnMut(HWND)>(parent: Option<HWND>, mut cmp_func: T) -> io::Res
 ///
 ///* ```Ok``` - Success.
 ///* ```Err``` - Error reason.
-pub fn enum_by_until<T: FnMut(HWND) -> i32>(parent: Option<HWND>, mut cmp_func: T) -> io::Result<()> {
+pub fn enum_by_until<T: FnMut(HWND) -> i32>(parent: Option<HWND>, mut cmp_func: T) -> Result<()> {
     let lparam = &mut cmp_func as *mut _ as LPARAM;
 
     let result: i32;
@@ -163,10 +161,8 @@ pub fn enum_by_until<T: FnMut(HWND) -> i32>(parent: Option<HWND>, mut cmp_func: 
     if result == 0 {
         let error = utils::get_last_error();
 
-        if let Some(errno) = error.raw_os_error() {
-            if errno != 0 {
-                return Err(utils::get_last_error());
-            }
+        if error.raw_code() != 0 {
+            return Err(utils::get_last_error());
         }
     }
 
@@ -183,7 +179,7 @@ pub fn enum_by_until<T: FnMut(HWND) -> i32>(parent: Option<HWND>, mut cmp_func: 
 ///
 ///* ```Ok``` - Success.
 ///* ```Err``` - Error reason.
-pub fn get_by_pid(pid: u32) -> io::Result<Option<HWND>> {
+pub fn get_by_pid(pid: u32) -> Result<Option<HWND>> {
     let mut found_window: Option<HWND> = None;
 
     let res = enum_by_until(None,
@@ -216,7 +212,7 @@ pub fn get_by_pid(pid: u32) -> io::Result<Option<HWND>> {
 ///
 ///* ```ok``` - vector of handles.
 ///* ```err``` - error reason.
-pub fn get_by_class(class_name: &str, parent: Option<HWND>) -> io::Result<Vec<HWND>> {
+pub fn get_by_class(class_name: &str, parent: Option<HWND>) -> Result<Vec<HWND>> {
     let mut found_windows: Vec<HWND> = vec![];
 
     let res = enum_by(parent,
@@ -247,7 +243,7 @@ pub fn get_by_class(class_name: &str, parent: Option<HWND>) -> io::Result<Vec<HW
 ///
 ///* ```Ok``` - Vector of handles.
 ///* ```Err``` - Error reason.
-pub fn get_by_title(name: &str, parent: Option<HWND>) -> io::Result<Vec<HWND>> {
+pub fn get_by_title(name: &str, parent: Option<HWND>) -> Result<Vec<HWND>> {
     let mut found_windows: Vec<HWND> = vec![];
 
     let res = enum_by(parent,
@@ -295,16 +291,16 @@ pub fn get_thread_process_id(window: HWND) -> (u32, u32) {
 ///
 ///* ```Ok``` - Handle to window.
 ///* ```Err``` - Error reason.
-pub fn find<T: AsRef<ffi::OsStr>>(class_name: T, window_name: Option<T>) -> io::Result<HWND> {
+pub fn find<T: AsRef<ffi::OsStr>>(class_name: T, window_name: Option<T>) -> Result<HWND> {
     let result: HWND;
     let mut class_name: Vec<u16> = class_name.as_ref().encode_wide().collect();
     class_name.push(0);
-    let class_name = class_name.as_ptr() as *const u16;
+    let class_name = class_name.as_ptr();
 
     if let Some(window_name) = window_name {
         let mut window_name: Vec<u16> = window_name.as_ref().encode_wide().collect();
         window_name.push(0);
-        let window_name = window_name.as_ptr() as *const u16;
+        let window_name = window_name.as_ptr();
 
         result = unsafe {FindWindowW(class_name, window_name)};
     }
@@ -335,11 +331,11 @@ pub fn find<T: AsRef<ffi::OsStr>>(class_name: T, window_name: Option<T>) -> io::
 pub fn find_child<T: AsRef<ffi::OsStr>>(class_name: T,
                                         window_name: Option<T>,
                                         parent: Option<HWND>,
-                                        child_after: Option<HWND>) -> io::Result<HWND> {
+                                        child_after: Option<HWND>) -> Result<HWND> {
     let result: HWND;
     let mut class_name: Vec<u16> = class_name.as_ref().encode_wide().collect();
     class_name.push(0);
-    let class_name = class_name.as_ptr() as *const u16;
+    let class_name = class_name.as_ptr();
 
     let parent = parent.unwrap_or(0x0 as HWND);
     let child_after = child_after.unwrap_or(0x0 as HWND);
@@ -347,7 +343,7 @@ pub fn find_child<T: AsRef<ffi::OsStr>>(class_name: T,
     if let Some(window_name) = window_name {
         let mut window_name: Vec<u16> = window_name.as_ref().encode_wide().collect();
         window_name.push(0);
-        let window_name = window_name.as_ptr() as *const u16;
+        let window_name = window_name.as_ptr();
 
         result = unsafe {FindWindowExW(parent, child_after, class_name, window_name)};
     }
@@ -385,7 +381,7 @@ pub fn send_message(window: HWND,
                     msg_type: UINT,
                     w_param: WPARAM,
                     l_param: LPARAM,
-                    timeout: Option<UINT>) -> io::Result<LRESULT> {
+                    timeout: Option<UINT>) -> Result<LRESULT> {
     if let Some(timeout) = timeout {
         unsafe {
             let mut result: ULONG_PTR = 0;
@@ -412,7 +408,7 @@ const BM_CLICK: c_uint = 0x00F5;
 ///
 ///* ```window``` - Handle to the window for which to send.
 ///* ```timeout``` - Optional timeout in milliseconds.
-pub fn send_push_button(window: HWND, timeout: Option<UINT>) -> io::Result<LRESULT> {
+pub fn send_push_button(window: HWND, timeout: Option<UINT>) -> Result<LRESULT> {
     send_message(window, BM_CLICK, 0, 0, timeout)
 }
 
@@ -430,7 +426,7 @@ pub fn send_push_button(window: HWND, timeout: Option<UINT>) -> io::Result<LRESU
 pub fn send_set_text<T: AsRef<ffi::OsStr>>(window: HWND, text: T) -> bool {
     let mut text: Vec<u16> = text.as_ref().encode_wide().collect();
     text.push(0);
-    let text = text.as_ptr() as *const u16 as LPARAM;
+    let text = text.as_ptr() as LPARAM;
 
     let result = send_message(window, WM_SETTEXT, 0, text, None);
     result.is_ok() && result.unwrap() != 0
@@ -457,7 +453,7 @@ pub fn send_get_text(window: HWND) -> Option<String> {
     let buf_len = buf_len + 1;
 
     let text: Vec<u16> = vec![0; buf_len as usize];
-    let text_ptr = text.as_ptr() as *const u16 as LPARAM;
+    let text_ptr = text.as_ptr() as LPARAM;
     //Does not include null char
     let buf_len = send_message(window, WM_GETTEXT, buf_len as WPARAM, text_ptr, None).unwrap() as usize;
 
@@ -602,12 +598,12 @@ impl Builder {
 
     ///Sets param which will be sent in `WM_CREATE`
     pub fn param(&mut self, value: &CREATESTRUCTW) -> &mut Builder {
-        self.param = Some(value.clone());
+        self.param = Some(*value);
         self
     }
 
     ///Creates window.
-    pub fn create(&mut self) -> io::Result<HWND> {
+    pub fn create(&mut self) -> Result<HWND> {
         let param = self.param.as_mut()
                               .map(|create_struct| create_struct as *mut CREATESTRUCTW as *mut c_void)
                               .unwrap_or(ptr::null_mut());
